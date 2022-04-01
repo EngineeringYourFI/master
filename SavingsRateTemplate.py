@@ -113,11 +113,13 @@ def PlotNumYearsToFI(YearsArray,SaveFile):
     ax = plt.gca()
     plt.ylim(0,100)
     plt.xlim(0,100)
-    # Putting dots at 10% intervals
-    for ct in range(0,10):
+    # Putting dots at 10% intervals, starting at 10% savings rate
+    for ct in range(1,10):
         SRct = IndexArray[int(ct/10*NumSteps)]
         NumYearsCt = YearsArray[int(ct/10*NumSteps)-1]
+
         plt.plot(SRct, NumYearsCt, 'o', markersize=PlotMarkerSize, markeredgewidth=1, markeredgecolor='k', markerfacecolor='k')
+
         # place a text box for each point
         if NumYearsCt < 100 and NumYearsCt > 0:
             if ct == 1:
@@ -126,6 +128,9 @@ def PlotNumYearsToFI(YearsArray,SaveFile):
             else:
                 ax.text(SRct/100+0.02, NumYearsCt/100+0.06, '{:0.1f}'.format(NumYearsCt), transform=ax.transAxes,
                         fontsize=30, verticalalignment='top', bbox=props)
+
+    # add site name, bottom left
+    ax.text(0.01, 0.04, 'EngineeringYourFI.com', transform=ax.transAxes, fontsize=20, verticalalignment='top') #, bbox=props)
 
     ax.ticklabel_format(useOffset=False)
     plt.ylabel('Number of Years to FI', fontsize=30) #,fontsize=20)
@@ -149,6 +154,7 @@ for ct in range(0, NumSteps):
 PlotNumYearsToFI(NumYearsWithoutIVarray,OutDir+'NumYearsToFI_noIV.png')
 
 
+#############################################################################################################
 
 def PlotNumYearsToFIMulti(YearsArray1,YearsArray2,SecondLineType,SecondLineColor,LegendLine1,LegendLine2,
                           TextBoxLine1xOff,TextBoxLine1yOff,TextBoxLine2xOff,TextBoxLine2yOff,YearsLabelLine,SaveFile):
@@ -166,8 +172,8 @@ def PlotNumYearsToFIMulti(YearsArray1,YearsArray2,SecondLineType,SecondLineColor
     ax = plt.gca()
     plt.ylim(0,100)
     plt.xlim(0,100)
-    # Putting dots at 10% intervals
-    for ct in range(0,10):
+    # Putting dots at 10% intervals, starting at 10% savings rate
+    for ct in range(1,10):
         SRct = IndexArray[int(ct/10*NumSteps)]
         NumYearsCt1 = YearsArray1[int(ct/10*NumSteps)-1]
         NumYearsCt2 = YearsArray2[int(ct/10*NumSteps)-1]
@@ -189,6 +195,9 @@ def PlotNumYearsToFIMulti(YearsArray1,YearsArray2,SecondLineType,SecondLineColor
                 ax.text(SRct/100+TextBoxLine2xOff, NumYearsCt2/100+TextBoxLine2yOff, '{:0.1f}'.format(NumYearsCt2),
                             transform=ax.transAxes, fontsize=30, verticalalignment='top', bbox=props)
 
+    # add site name, bottom left
+    ax.text(0.01, 0.04, 'EngineeringYourFI.com', transform=ax.transAxes, fontsize=20, verticalalignment='top') #, bbox=props)
+
     ax.ticklabel_format(useOffset=False)
     plt.ylabel('Number of Years to FI', fontsize=30) #,fontsize=20)
     plt.xlabel('Savings Rate %', fontsize=30) #,fontsize=20)
@@ -205,7 +214,7 @@ def PlotNumYearsToFIMulti(YearsArray1,YearsArray2,SecondLineType,SecondLineColor
 R_75 = 0.075
 SR = 0.5
 NumYearsWithoutIV_R_75 = np.log( (1/(WR*SR)) * (R_75 - R_75*SR) + 1 ) / np.log(1+R_75)
-print('NumYearsWithoutIV = ', str(NumYearsWithoutIV_R_75))
+print('NumYearsWithoutIVhigherROIof7.5 = ', str(NumYearsWithoutIV_R_75))
 
 NumYearsWithoutIVarrayR_75 = np.zeros(NumSteps)
 for ct in range(0, NumSteps):
@@ -220,7 +229,7 @@ PlotNumYearsToFIMulti(NumYearsWithoutIVarray,NumYearsWithoutIVarrayR_75,'--','b'
 SR = 0.5
 WR_35 = 0.035
 NumYearsWithoutIV_WR_35 = np.log( (1/(WR_35*SR)) * (R - R*SR) + 1 ) / np.log(1+R)
-print('NumYearsWithoutIV = ', str(NumYearsWithoutIV_WR_35))
+print('NumYearsWithoutIVlowerSWRof3.5 = ', str(NumYearsWithoutIV_WR_35))
 
 NumYearsWithoutIVarrayWR_35 = np.zeros(NumSteps)
 for ct in range(0, NumSteps):
