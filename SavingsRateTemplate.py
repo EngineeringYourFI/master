@@ -66,7 +66,7 @@ SR = 0.5 #0.7 #
 # Annual withdrawal rate
 WR = 0.04
 # Annual interest rate (i.e. expected investment return)
-R = 0.05
+R = 0.07
 
 # Annual income
 I = 100000
@@ -107,7 +107,7 @@ def PlotNumYearsToFI(YearsArray,SaveFile):
     NumSteps = len(YearsArray)
     IndexArray = np.arange(0,NumSteps)/NumSteps*100
 
-    fig = plt.figure(1,figsize=(13.16,10.0))
+    fig = plt.figure(1,figsize=(10.8,10.8)) # figsize=(13.16,10.0)
     plt.plot(IndexArray, YearsArray, '-', linewidth=3, color='r')
 
     ax = plt.gca()
@@ -124,10 +124,10 @@ def PlotNumYearsToFI(YearsArray,SaveFile):
         if NumYearsCt < 100 and NumYearsCt > 0:
             if ct == 1:
                 ax.text(SRct/100+0.02, NumYearsCt/100+0.06, '{:0.1f}'.format(NumYearsCt)+' Years', transform=ax.transAxes,
-                        fontsize=30, verticalalignment='top', bbox=props)
+                        fontsize=26, verticalalignment='top', bbox=props)
             else:
                 ax.text(SRct/100+0.02, NumYearsCt/100+0.06, '{:0.1f}'.format(NumYearsCt), transform=ax.transAxes,
-                        fontsize=30, verticalalignment='top', bbox=props)
+                        fontsize=26, verticalalignment='top', bbox=props)
 
     # add site name, bottom left
     ax.text(0.01, 0.04, 'EngineeringYourFI.com', transform=ax.transAxes, fontsize=20, verticalalignment='top') #, bbox=props)
@@ -135,7 +135,7 @@ def PlotNumYearsToFI(YearsArray,SaveFile):
     ax.ticklabel_format(useOffset=False)
     plt.ylabel('Number of Years to FI', fontsize=30) #,fontsize=20)
     plt.xlabel('Savings Rate %', fontsize=30) #,fontsize=20)
-    plt.title('Years to FI vs Savings Rate, Starting with $0', y=1.04, fontsize=35) # fontsize=23,
+    plt.title('Years to FI vs Savings Rate, From $0', y=1.04, fontsize=35) # fontsize=23,
     plt.gca().tick_params(axis='both', which='major', labelsize=30)
     plt.grid(color='gray',linestyle='--') # or just plt.grid(True)  color='lightgray'
     # plt.legend(loc='best',fontsize=20,numpoints=1)
@@ -165,7 +165,7 @@ def PlotNumYearsToFIMulti(YearsArray1,YearsArray2,SecondLineType,SecondLineColor
     NumSteps = len(YearsArray1)
     IndexArray = np.arange(0,NumSteps)/NumSteps*100
 
-    fig = plt.figure(1,figsize=(13.16,10.0))
+    fig = plt.figure(1,figsize=(10.8,10.8)) # figsize=(13.16,10.0)
     plt.plot(IndexArray, YearsArray1, '-', linewidth=3, color='r', label=LegendLine1)
     plt.plot(IndexArray, YearsArray2, SecondLineType, linewidth=3, color=SecondLineColor, label=LegendLine2)
 
@@ -183,17 +183,17 @@ def PlotNumYearsToFIMulti(YearsArray1,YearsArray2,SecondLineType,SecondLineColor
         if NumYearsCt1 < 100 and NumYearsCt1 > 0:
             if ct == 1 and YearsLabelLine == 1:
                 ax.text(SRct/100+TextBoxLine1xOff, NumYearsCt1/100+TextBoxLine1yOff, '{:0.1f}'.format(NumYearsCt1)+' Years',
-                        transform=ax.transAxes, fontsize=30, verticalalignment='top', bbox=props)
+                        transform=ax.transAxes, fontsize=26, verticalalignment='top', bbox=props)
             else:
                 ax.text(SRct/100+TextBoxLine1xOff, NumYearsCt1/100+TextBoxLine1yOff, '{:0.1f}'.format(NumYearsCt1),
-                        transform=ax.transAxes, fontsize=30, verticalalignment='top', bbox=props)
+                        transform=ax.transAxes, fontsize=26, verticalalignment='top', bbox=props)
         if NumYearsCt2 < 100 and NumYearsCt2 > 0:
             if ct == 1 and YearsLabelLine == 2:
                 ax.text(SRct/100+TextBoxLine2xOff, NumYearsCt2/100+TextBoxLine2yOff, '{:0.1f}'.format(NumYearsCt2)+' Years',
-                            transform=ax.transAxes, fontsize=30, verticalalignment='top', bbox=props)
+                            transform=ax.transAxes, fontsize=26, verticalalignment='top', bbox=props)
             else:
                 ax.text(SRct/100+TextBoxLine2xOff, NumYearsCt2/100+TextBoxLine2yOff, '{:0.1f}'.format(NumYearsCt2),
-                            transform=ax.transAxes, fontsize=30, verticalalignment='top', bbox=props)
+                            transform=ax.transAxes, fontsize=26, verticalalignment='top', bbox=props)
 
     # add site name, bottom left
     ax.text(0.01, 0.04, 'EngineeringYourFI.com', transform=ax.transAxes, fontsize=20, verticalalignment='top') #, bbox=props)
@@ -201,28 +201,28 @@ def PlotNumYearsToFIMulti(YearsArray1,YearsArray2,SecondLineType,SecondLineColor
     ax.ticklabel_format(useOffset=False)
     plt.ylabel('Number of Years to FI', fontsize=30) #,fontsize=20)
     plt.xlabel('Savings Rate %', fontsize=30) #,fontsize=20)
-    plt.title('Years to FI vs Savings Rate, Starting with $0', y=1.04, fontsize=35) # fontsize=23,
+    plt.title('Years to FI vs Savings Rate, From $0', y=1.04, fontsize=35) # fontsize=23,
     plt.gca().tick_params(axis='both', which='major', labelsize=30)
     plt.grid(color='gray',linestyle='--') # or just plt.grid(True)  color='lightgray'
-    plt.legend(loc='best',fontsize=30,numpoints=1)
+    plt.legend(loc='best',fontsize=28,numpoints=1)
     plt.tight_layout()
     plt.savefig(SaveFile)
     plt.close()
 
 
 # Higher Annual interest rate (i.e. expected investment return)
-R_75 = 0.075
+R_10 = 0.1
 SR = 0.5
-NumYearsWithoutIV_R_75 = np.log( (1/(WR*SR)) * (R_75 - R_75*SR) + 1 ) / np.log(1+R_75)
-print('NumYearsWithoutIVhigherROIof7.5 = ', str(NumYearsWithoutIV_R_75))
+NumYearsWithoutIV_R_10 = np.log( (1/(WR*SR)) * (R_10 - R_10*SR) + 1 ) / np.log(1+R_10)
+print('NumYearsWithoutIVhigherROIof10 = ', str(NumYearsWithoutIV_R_10))
 
-NumYearsWithoutIVarrayR_75 = np.zeros(NumSteps)
+NumYearsWithoutIVarrayR_10 = np.zeros(NumSteps)
 for ct in range(0, NumSteps):
     SR = (ct+1)/NumSteps
-    NumYearsWithoutIVarrayR_75[ct] = np.log( (1/(WR*SR)) * (R_75 - R_75*SR) + 1 ) / np.log(1+R_75)
+    NumYearsWithoutIVarrayR_10[ct] = np.log( (1/(WR*SR)) * (R_10 - R_10*SR) + 1 ) / np.log(1+R_10)
 
-PlotNumYearsToFIMulti(NumYearsWithoutIVarray,NumYearsWithoutIVarrayR_75,'--','b','Annual Investment Interest = 5%',
-                      'Annual Investment Interest = 7.5%',0.02,0.06,-0.08,-0.03,1,OutDir+'NumYearsToFI_noIV_R7.5.png')
+PlotNumYearsToFIMulti(NumYearsWithoutIVarray,NumYearsWithoutIVarrayR_10,'--','b','Annual Investment Return = 7%',
+                      'Annual Investment Return = 10%',0.02,0.06,-0.08,-0.03,1,OutDir+'NumYearsToFI_noIV_R10.png')
 
 
 # Lower safe withdrawal rate
