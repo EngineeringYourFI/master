@@ -59,12 +59,12 @@ SR = 0.5
 # Annual withdrawal rate
 WR = 0.04
 # Annual interest rate (i.e. expected investment return)
-R = 0.05
+R = 0.07
 
 # Annual income
 I = 80000
 # Initial net worth
-IV = 100000 # 50000 #
+# IV = 100000 # 50000 #
 
 # Output Directory
 OutDir = './'
@@ -89,7 +89,7 @@ def PlotNumYearsToFIvsIV(YearsArray,IVarray,SaveFile):
     # these are matplotlib.patch.Patch properties
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.9)
 
-    fig = plt.figure(1,figsize=(13.16,10.0))
+    fig = plt.figure(1,figsize=(10.8,10.8)) # figsize=(13.16,10.0)
     plt.plot(IVarray/1000, YearsArray, '-', linewidth=3, color='r')
 
     ax = plt.gca()
@@ -102,7 +102,7 @@ def PlotNumYearsToFIvsIV(YearsArray,IVarray,SaveFile):
     ax.ticklabel_format(useOffset=False)
     plt.ylabel('Number of Years to FI', fontsize=30)
     plt.xlabel('Initial Portfolio Balance ($K)', fontsize=30)
-    plt.title('Years to FI vs Initial Balance, Saving 50%', y=1.04, fontsize=35)
+    plt.title('Years to FI vs Initial Balance, Saving 50%', y=1.04, fontsize=32)
     plt.gca().tick_params(axis='both', which='major', labelsize=30)
     plt.grid(color='gray',linestyle='--')
     plt.tight_layout()
@@ -134,7 +134,7 @@ def PlotNumYearsToFIvsIVmulti(YearsArray,IVarray,SavingsRateArray,PlotColorsArra
     # these are matplotlib.patch.Patch properties
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.9)
 
-    fig = plt.figure(1,figsize=(13.16,10.0))
+    fig = plt.figure(1,figsize=(10.8,10.8)) # figsize=(13.16,10.0)
 
     # Loop over savings rates, plot Years to FI values for each vs initial value
     for ct in range(0,len(SavingsRateArray)):
@@ -151,7 +151,7 @@ def PlotNumYearsToFIvsIVmulti(YearsArray,IVarray,SavingsRateArray,PlotColorsArra
     ax.ticklabel_format(useOffset=False)
     plt.ylabel('Number of Years to FI', fontsize=30)
     plt.xlabel('Initial Portfolio Balance ($K)', fontsize=30)
-    plt.title('Years to FI vs Initial Balance, Expenses $40K', y=1.04, fontsize=35)
+    plt.title('Years to FI vs Initial Balance, Expenses $40K', y=1.04, fontsize=32)
     plt.gca().tick_params(axis='both', which='major', labelsize=30)
     plt.grid(color='gray',linestyle='--')
     plt.legend(loc='best',fontsize=20,numpoints=1)
@@ -196,7 +196,7 @@ def PlotNumYearsToFIvsExpensesMulti(YearsArray,ExpensesArray,SavingsRateArray,Pl
     # these are matplotlib.patch.Patch properties
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.9)
 
-    fig = plt.figure(1,figsize=(13.16,10.0))
+    fig = plt.figure(1,figsize=(10.8,10.8)) # figsize=(13.16,10.0)
 
     # Loop over savings rates, plot Years to FI values for each vs initial value
     for ct in range(0,len(SavingsRateArray)):
@@ -208,12 +208,12 @@ def PlotNumYearsToFIvsExpensesMulti(YearsArray,ExpensesArray,SavingsRateArray,Pl
     plt.xlim(0,ExpensesArray[-1]/1000+0.1)
 
     # add site name, bottom right
-    ax.text(1-0.29, 0.04, 'EngineeringYourFI.com', transform=ax.transAxes, fontsize=20, verticalalignment='top')
+    ax.text(1-0.38, 0.04, 'EngineeringYourFI.com', transform=ax.transAxes, fontsize=20, verticalalignment='top')
 
     ax.ticklabel_format(useOffset=False)
     plt.ylabel('Number of Years to FI', fontsize=30)
     plt.xlabel('Annual Expenses ($K)', fontsize=30)
-    plt.title('Years to FI vs Expenses, Initial Balance $200K', y=1.04, fontsize=35)
+    plt.title('Years to FI vs Expenses, Initial Balance $200K', y=1.04, fontsize=31)
     plt.gca().tick_params(axis='both', which='major', labelsize=30)
     plt.grid(color='gray',linestyle='--')
     plt.legend(loc='best',fontsize=20,numpoints=1)
