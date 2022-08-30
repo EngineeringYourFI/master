@@ -65,6 +65,11 @@ CurrentAnnualNonQualifiedDividends = 100.
 # Social security - taxed different, so don't place in OtherIncomeSources
 SocialSecurityPayments = np.array([17000,17000], dtype=float)
 AgeSSwillStart = np.array([67,67], dtype=float)
+# Note: Once you've reached full retirement age (67 if born after 1960), you can earn as much as you want with no penalties.
+# Before your full retirement age, you can earn up to $19,560 per year (as of 2022) without having your Social Security
+# payments reduced. Bad news: If you earn over this limit, your benefits will be cut. Good news: When you reach full
+# retirement age, any withheld benefits will be returned to you in the form of higher monthly payments.
+# https://investor.vanguard.com/investor-resources-education/article/top-questions-about-social-security
 # Other income
 OtherIncomeSources = np.array([], dtype=float) # e.g. pension, in current dollars
 AgeOtherIncomeSourcesWillStart = np.array([], dtype=float)  # using first person in CurrentAge array
