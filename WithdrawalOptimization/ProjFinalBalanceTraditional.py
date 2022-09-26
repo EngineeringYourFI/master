@@ -292,7 +292,7 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
                 TotalIncome[ct1] += TaxableSSincome
 
             # Compute taxes
-            Taxes[ct1] = np.round(ComputeTaxes(TaxRateInfo,Age[ct1,:],SingleOrMarried,TotalStandardIncome[ct1],
+            Taxes[ct1] = np.round(ComputeTaxes(TaxRateInfo,SingleOrMarried,TotalStandardIncome[ct1],
                                                TotalLTcapGainsIncome[ct1]),2)
 
             # subtract taxes from TotalCash
