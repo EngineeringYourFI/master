@@ -39,12 +39,16 @@ MarriedIncomeBracketLTcapGainsMins = np.array([0,83350,517200], dtype=float)
 
 
 # Pre-tax assets initial value
-PreTaxIV = 400000.
-PreTax457bIV = 100000. # 457b can be withdrawn without 10% penalty before 59.5
+PreTaxIV = 400000. # Scenario 1
+# PreTaxIV = 500000. # Scenario 2
+PreTax457bIV = 100000. # Scenario 1
+# PreTax457bIV = 200000. # Scenario 2
 # Every lot in post-tax account, to know what cap gains are on each
-PostTaxIV = np.array([50000., 50000., 50000., 50000., 50000., 50000., 50000., 50000.], dtype=float)
+PostTaxIV = np.array([50000., 50000., 50000., 50000., 50000., 50000., 50000., 50000.], dtype=float) # Scenario 1
+# PostTaxIV = np.array([25000., 25000., 25000., 25000., 25000., 25000., 25000., 25000.], dtype=float)  # Scenario 2
 # current unrealized cap gains on each lot
-CurrentUnrealizedCapGains = np.array([15000., 15000., 15000., 15000., 15000., 15000., 15000., 15000.], dtype=float)
+CurrentUnrealizedCapGains = np.array([15000., 15000., 15000., 15000., 15000., 15000., 15000., 15000.], dtype=float) # Scenario 1
+# CurrentUnrealizedCapGains = np.array([7500., 7500., 7500., 7500., 7500., 7500., 7500., 7500.], dtype=float) # Scenario 2
 # NOTE: after the first year, withdrawal code will assume all cap gains are long term cap gains, to simplify the logic.
 # If there ARE any lots purchased the first year of retirement (e.g. you did some tax loss harvesting and then decided
 # to retire that same year), set relevant value in LotPurchasedFirstYear to True.
@@ -60,7 +64,8 @@ CashCushion = 20000.
 
 # Retirement Income
 # Dividends
-CurrentAnnualQualifiedDividends = 10000.
+CurrentAnnualQualifiedDividends = 10000. # Scenario 1
+# CurrentAnnualQualifiedDividends = 5000. # Scenario 2
 CurrentAnnualNonQualifiedDividends = 100.
 # Social security - taxed different, so don't place in OtherIncomeSources
 SocialSecurityPayments = np.array([17000,17000], dtype=float)
@@ -81,7 +86,8 @@ SpecifiedIncome = 50000.
 SpecifiedIncomeAfterACA = MarriedIncomeBracketLTcapGainsMins[1]
 
 # Retirement Expenses
-Exp = 40000.
+Exp = 40000. # Scenario 1
+# Exp = 45000. # Scenario 2
 
 # Future expense adjustments (e.g. a mortgage is paid off)
 FutureExpenseAdjustments = np.array([-800.*12], dtype=float)
