@@ -103,6 +103,11 @@ OutputFile = 'Output.txt'
 # Smart or Traditional Withdrawal Method
 SmartOrTraditionalWithdrawal = 'Traditional' #'Smart' #
 
+# Plot flags
+AssetBalancesVsAge = True
+YearlyValuesVsAge = False
+YearlyValuesNoTotalCashVsAge = False
+
 #############################################################################################################
 
 # Capturing inputs in relevant dictionaries
@@ -186,119 +191,124 @@ file.close()
 #############################################################################################################
 
 # Plot nominal run results
-NumPlots = 7 # TotalAssets, PostTaxTotal, PreTax, PreTax457b, Roth, CashCushion, CapGainsTotal
-AssetsArray = np.zeros((NumPlots,len(ProjArrays['TotalAssets'])))
-AssetsArray[0,:] = ProjArrays['TotalAssets']/1.e6
-AssetsArray[1,:] = ProjArrays['PostTaxTotal']/1.e6
-AssetsArray[2,:] = ProjArrays['PreTax']/1.e6
-AssetsArray[3,:] = ProjArrays['PreTax457b']/1.e6
-AssetsArray[4,:] = ProjArrays['Roth']/1.e6
-AssetsArray[5,:] = ProjArrays['CashCushion']/1.e6
-AssetsArray[6,:] = ProjArrays['CapGainsTotal']/1.e6
+if AssetBalancesVsAge:
 
-PlotLabelArray = ['Total, Final $'+'{:.3f}M'.format(ProjArrays['TotalAssets'][-1]/1.e6),'PostTaxTotal','PreTax',
-                  'PreTax457b','Roth','CashCushion','CapGains']
-PlotColorArray = ['k','r','b','g','c','m','limegreen']
+    NumPlots = 7 # TotalAssets, PostTaxTotal, PreTax, PreTax457b, Roth, CashCushion, CapGainsTotal
+    AssetsArray = np.zeros((NumPlots,len(ProjArrays['TotalAssets'])))
+    AssetsArray[0,:] = ProjArrays['TotalAssets']/1.e6
+    AssetsArray[1,:] = ProjArrays['PostTaxTotal']/1.e6
+    AssetsArray[2,:] = ProjArrays['PreTax']/1.e6
+    AssetsArray[3,:] = ProjArrays['PreTax457b']/1.e6
+    AssetsArray[4,:] = ProjArrays['Roth']/1.e6
+    AssetsArray[5,:] = ProjArrays['CashCushion']/1.e6
+    AssetsArray[6,:] = ProjArrays['CapGainsTotal']/1.e6
 
-# Initialize plot dict using default dict
-PlotDict = copy.deepcopy(DefaultPlotDict)
-# Specify unique plot values
-UpdateDict = \
-    {'IndepData': ProjArrays['Age'][:,0],
-     'DepData': AssetsArray,
-     'NumPlots': NumPlots,
-     'PlotColorArray': PlotColorArray,
-     'PlotLabelArray': PlotLabelArray,
-     'SemilogyFlag': False,
-     'ymin': 0, 'ymax': np.max(ProjArrays['TotalAssets']/1.e6)+1.,
-     'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
-     'ylabel': 'Asset Balance [2022 $M]',
-     'xlabel': 'Age',
-     'TitleText': 'Asset Balances vs Age, Annual ROI 7%',
-     'LegendLoc': 'upper right',
-     'SaveFile': OutDir+'AssetBalancesVsAge.png'}
-# Update dict to have plot specific values
-PlotDict.update(UpdateDict)
-# Create plot
-MultiPlot(PlotDict)
+    PlotLabelArray = ['Total, Final $'+'{:.3f}M'.format(ProjArrays['TotalAssets'][-1]/1.e6),'PostTaxTotal','PreTax',
+                      'PreTax457b','Roth','CashCushion','CapGains']
+    PlotColorArray = ['k','r','b','g','c','m','limegreen']
+
+    # Initialize plot dict using default dict
+    PlotDict = copy.deepcopy(DefaultPlotDict)
+    # Specify unique plot values
+    UpdateDict = \
+        {'IndepData': ProjArrays['Age'][:,0],
+         'DepData': AssetsArray,
+         'NumPlots': NumPlots,
+         'PlotColorArray': PlotColorArray,
+         'PlotLabelArray': PlotLabelArray,
+         'SemilogyFlag': False,
+         'ymin': 0, 'ymax': np.max(ProjArrays['TotalAssets']/1.e6)+1.,
+         'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
+         'ylabel': 'Asset Balance [2022 $M]',
+         'xlabel': 'Age',
+         'TitleText': 'Asset Balances vs Age, Annual ROI 7%',
+         'LegendLoc': 'upper right',
+         'SaveFile': OutDir+'AssetBalancesVsAge.png'}
+    # Update dict to have plot specific values
+    PlotDict.update(UpdateDict)
+    # Create plot
+    MultiPlot(PlotDict)
 
 #############################################################################################################
 
 # Plot yearly results
+if YearlyValuesVsAge:
 
-# SpecifiedIncome, TotalStandardIncome, TotalLTcapGainsIncome, TotalSSincome, TotalIncome, TotalCash, Expenses, Taxes
-NumPlots = 9
-ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
-ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
-ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
-ValuesArray[2,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
-ValuesArray[3,:] = ProjArrays['TotalSSincome']/1000.
-ValuesArray[4,:] = ProjArrays['TotalIncome']/1000.
-ValuesArray[5,:] = ProjArrays['TotalCash']/1000.
-ValuesArray[6,:] = ProjArrays['Expenses']/1000.
-ValuesArray[7,:] = ProjArrays['Taxes']/1000.
-ValuesArray[8,:] = ProjArrays['Penalties']/1000.
+    # SpecifiedIncome, TotalStandardIncome, TotalLTcapGainsIncome, TotalSSincome, TotalIncome, TotalCash, Expenses, Taxes
+    NumPlots = 9
+    ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
+    ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
+    ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
+    ValuesArray[2,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
+    ValuesArray[3,:] = ProjArrays['TotalSSincome']/1000.
+    ValuesArray[4,:] = ProjArrays['TotalIncome']/1000.
+    ValuesArray[5,:] = ProjArrays['TotalCash']/1000.
+    ValuesArray[6,:] = ProjArrays['Expenses']/1000.
+    ValuesArray[7,:] = ProjArrays['Taxes']/1000.
+    ValuesArray[8,:] = ProjArrays['Penalties']/1000.
 
-PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
-                  'TotalCash','Expenses','Taxes','Penalties']
-PlotColorArray = ['k','r','b','g','c','m','y','limegreen','fuchsia']
+    PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
+                      'TotalCash','Expenses','Taxes','Penalties']
+    PlotColorArray = ['k','r','b','g','c','m','y','limegreen','fuchsia']
 
-# Initialize plot dict using default dict
-PlotDict = copy.deepcopy(DefaultPlotDict)
-# Specify unique plot values
-UpdateDict = \
-    {'IndepData': ProjArrays['Age'][:,0],
-     'DepData': ValuesArray,
-     'NumPlots': NumPlots,
-     'PlotColorArray': PlotColorArray,
-     'PlotLabelArray': PlotLabelArray,
-     'SemilogyFlag': False,
-     'ymin': 0, 'ymax': np.max(ValuesArray)+1.,
-     'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
-     'ylabel': 'Yearly Values [2022 $K]',
-     'xlabel': 'Age',
-     'TitleText': 'Yearly Values vs Age',
-     'LegendLoc': 'upper right',
-     'SaveFile': OutDir+'YearlyValuesVsAge.png'}
-# Update dict to have plot specific values
-PlotDict.update(UpdateDict)
-# Create plot
-MultiPlot(PlotDict)
+    # Initialize plot dict using default dict
+    PlotDict = copy.deepcopy(DefaultPlotDict)
+    # Specify unique plot values
+    UpdateDict = \
+        {'IndepData': ProjArrays['Age'][:,0],
+         'DepData': ValuesArray,
+         'NumPlots': NumPlots,
+         'PlotColorArray': PlotColorArray,
+         'PlotLabelArray': PlotLabelArray,
+         'SemilogyFlag': False,
+         'ymin': 0, 'ymax': np.max(ValuesArray)+1.,
+         'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
+         'ylabel': 'Yearly Values [2022 $K]',
+         'xlabel': 'Age',
+         'TitleText': 'Yearly Values vs Age',
+         'LegendLoc': 'upper right',
+         'SaveFile': OutDir+'YearlyValuesVsAge.png'}
+    # Update dict to have plot specific values
+    PlotDict.update(UpdateDict)
+    # Create plot
+    MultiPlot(PlotDict)
 
 # and plot without TotalCash
-NumPlots = 8
-ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
-ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
-ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
-ValuesArray[2,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
-ValuesArray[3,:] = ProjArrays['TotalSSincome']/1000.
-ValuesArray[4,:] = ProjArrays['TotalIncome']/1000.
-ValuesArray[5,:] = ProjArrays['Expenses']/1000.
-ValuesArray[6,:] = ProjArrays['Taxes']/1000.
-ValuesArray[7,:] = ProjArrays['Penalties']/1000.
+if YearlyValuesNoTotalCashVsAge:
 
-PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
-                  'Expenses','Taxes','Penalties']
-PlotColorArray = ['k','r','b','g','c','y','limegreen','fuchsia']
+    NumPlots = 8
+    ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
+    ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
+    ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
+    ValuesArray[2,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
+    ValuesArray[3,:] = ProjArrays['TotalSSincome']/1000.
+    ValuesArray[4,:] = ProjArrays['TotalIncome']/1000.
+    ValuesArray[5,:] = ProjArrays['Expenses']/1000.
+    ValuesArray[6,:] = ProjArrays['Taxes']/1000.
+    ValuesArray[7,:] = ProjArrays['Penalties']/1000.
 
-# Initialize plot dict using default dict
-PlotDict = copy.deepcopy(DefaultPlotDict)
-# Specify unique plot values
-UpdateDict = \
-    {'IndepData': ProjArrays['Age'][:,0],
-     'DepData': ValuesArray,
-     'NumPlots': NumPlots,
-     'PlotColorArray': PlotColorArray,
-     'PlotLabelArray': PlotLabelArray,
-     'SemilogyFlag': False,
-     'ymin': 0, 'ymax': np.max(ValuesArray)+1.,
-     'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
-     'ylabel': 'Yearly Values [2022 $K]',
-     'xlabel': 'Age',
-     'TitleText': 'Yearly Values vs Age',
-     'LegendLoc': 'upper right',
-     'SaveFile': OutDir+'YearlyValuesNoTotalCashVsAge.png'}
-# Update dict to have plot specific values
-PlotDict.update(UpdateDict)
-# Create plot
-MultiPlot(PlotDict)
+    PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
+                      'Expenses','Taxes','Penalties']
+    PlotColorArray = ['k','r','b','g','c','y','limegreen','fuchsia']
+
+    # Initialize plot dict using default dict
+    PlotDict = copy.deepcopy(DefaultPlotDict)
+    # Specify unique plot values
+    UpdateDict = \
+        {'IndepData': ProjArrays['Age'][:,0],
+         'DepData': ValuesArray,
+         'NumPlots': NumPlots,
+         'PlotColorArray': PlotColorArray,
+         'PlotLabelArray': PlotLabelArray,
+         'SemilogyFlag': False,
+         'ymin': 0, 'ymax': np.max(ValuesArray)+1.,
+         'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
+         'ylabel': 'Yearly Values [2022 $K]',
+         'xlabel': 'Age',
+         'TitleText': 'Yearly Values vs Age',
+         'LegendLoc': 'upper right',
+         'SaveFile': OutDir+'YearlyValuesNoTotalCashVsAge.png'}
+    # Update dict to have plot specific values
+    PlotDict.update(UpdateDict)
+    # Create plot
+    MultiPlot(PlotDict)
