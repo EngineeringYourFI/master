@@ -321,6 +321,11 @@ if NumYearsToFIvsIncGrowthRate:
                     NumYearsArray[ct1,ct2] = 1000
                     StillConverging = False
 
+                # if the number of years exceeds 100, then can safely stop the loop over income growth rates (and
+                # prevents errors from popping up that are unnecessary to see)
+                if NumYearsArray[ct1,ct2] > 100.:
+                    StillConverging = False
+
             else:
                 # specify as NaN so it's not plotted
                 NumYearsArray[ct1,ct2] = float("nan")
