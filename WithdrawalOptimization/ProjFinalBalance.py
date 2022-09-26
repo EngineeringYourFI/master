@@ -274,8 +274,7 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
         # Taxes
 
         # Compute Taxes
-        Taxes[ct1] = ComputeTaxes(TaxRateInfo,Age[ct1,:],SingleOrMarried,TotalStandardIncome[ct1],
-                                  TotalLTcapGainsIncome[ct1])
+        Taxes[ct1] = ComputeTaxes(TaxRateInfo,SingleOrMarried,TotalStandardIncome[ct1],TotalLTcapGainsIncome[ct1])
 
         # subtract taxes from TotalCash
         CashMinusTaxes = TotalCash[ct1] - Taxes[ct1]
