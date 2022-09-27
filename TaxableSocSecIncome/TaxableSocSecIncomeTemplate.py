@@ -23,11 +23,13 @@ from TaxableSSconsolidated import TaxableSSconsolidated
 NonSSincome = 20000.
 
 # Total SS income
-TotalSSincome = 36000. #18000 #
+TotalSSincome = 36000. # Married scenario
+# TotalSSincome = 18000 # Other status scenario
 
 # Filing status - Married Filing Jointly ('Married') or Not (Single, head of household, qualifying widow(er), married
 # filing seperately)
-MarriedOrNot = 'Married' #'Not' #
+MarriedOrNot = 'Married' # Married scenario
+# MarriedOrNot = 'Not' # Other status scenario
 
 # Output Directory
 OutDir = './'
@@ -36,13 +38,13 @@ OutDir = './'
 
 # Flags
 TaxableSSconsolidatedVerification = False
-SpecificSituations = True
+SpecificSituations = False
 
 # Plot flags
 TaxSSIvsNSSI_SingleSSI = False
 TaxSSIvsSSI_SingleNSSI = False
-TaxSSIvsNSSI_MultiSSI = False
-TaxSSIvsSSI_MultiNSSI = False
+TaxSSIvsNSSI_MultiSSI = True
+TaxSSIvsSSI_MultiNSSI = True
 
 #############################################################################################################
 
@@ -248,15 +250,18 @@ if TaxSSIvsSSI_SingleNSSI:
 #############################################################################################################
 
 # Plot TaxableSSincome for a range of NonSSincome - $100 increments from $0 to $100K
-# Create 5 lines (each different color), for multiple TotalSSincome: $20K, $40K, $60K, $80K, $100K  #$10K, $20K, $30K, $40K, $50K
+# Create 5 lines (each different color), for multiple TotalSSincome: $20K, $40K, $60K, $80K, $100K  # Married scenario
+# Create 5 lines (each different color), for multiple TotalSSincome: $10K, $20K, $30K, $40K, $50K # Other status scenario
 if TaxSSIvsNSSI_MultiSSI:
 
     # Max individual SS income in 2022 is $4194 * 12 = $50328
     # Thus max married couple SS income in 2022 is $50328 * 2 = $100656
 
     NonSSincomeArray = np.arange(0.,100000.,100.)
-    # TotalSSincomeArray = np.array([10000,20000,30000,40000,50000], dtype=float)
-    TotalSSincomeArray = np.array([20000,40000,60000,80000,100000], dtype=float)
+    if MarriedOrNot == 'Married':
+        TotalSSincomeArray = np.array([20000,40000,60000,80000,100000], dtype=float) # Married scenario
+    else:
+        TotalSSincomeArray = np.array([10000,20000,30000,40000,50000], dtype=float) # Other status scenario
 
     NumPlots = len(TotalSSincomeArray)
     TaxableSSincomeArray2D = np.zeros((NumPlots,len(NonSSincomeArray)))
@@ -266,13 +271,19 @@ if TaxSSIvsNSSI_MultiSSI:
             TaxableSSincomeArray2D[ct1,ct2] = TaxableSSconsolidated(NonSSincomeArray[ct2],TotalSSincomeArray[ct1],
                                                                     MarriedOrNot)
 
-    # PlotLabelArray = ['SSI $10K','SSI $20K','SSI $30K','SSI $40K','SSI $50K']
-    PlotLabelArray = ['SSI $20K','SSI $40K','SSI $60K','SSI $80K','SSI $100K']
+    if MarriedOrNot == 'Married':
+        PlotLabelArray = ['SSI $20K','SSI $40K','SSI $60K','SSI $80K','SSI $100K'] # Married scenario
+    else:
+        PlotLabelArray = ['SSI $10K','SSI $20K','SSI $30K','SSI $40K','SSI $50K'] # Other status scenario
     PlotColorArray = ['k','r','b','g','m']
 
     # Initialize plot dict using default dict
     PlotDict = copy.deepcopy(DefaultPlotDict)
     # Specify unique plot values
+    if MarriedOrNot == 'Married':
+        Filename = 'TaxableSSIvsNonSSI_SSI20_40_60_80_100K.png' # Married scenario
+    else:
+        Filename = 'TaxableSSIvsNonSSI_SSI10_20_30_40_50K.png' # Other status scenario
     UpdateDict = \
         {'IndepData': NonSSincomeArray/1000.,
          'DepData': TaxableSSincomeArray2D/1000.,
@@ -286,7 +297,7 @@ if TaxSSIvsNSSI_MultiSSI:
          'xlabel': 'Non-SSI [$K]',
          'TitleText': 'Taxable Social Security Income (SSI)',
          'LegendLoc': 'upper right',
-         'SaveFile': OutDir+'TaxableSSIvsNonSSI_SSI20_40_60_80_100K.png'} #10_20_30_40_50K
+         'SaveFile': OutDir+Filename}
     # Update dict to have plot specific values
     PlotDict.update(UpdateDict)
     # Create plot
@@ -301,7 +312,10 @@ if TaxSSIvsSSI_MultiNSSI:
     # Max individual SS income in 2022 is $4194 * 12 = $50328
     # Thus max married couple SS income in 2022 is $50328 * 2 = $100656
 
-    TotalSSincomeArray = np.arange(0.,100000.,100.) #50000
+    if MarriedOrNot == 'Married':
+        TotalSSincomeArray = np.arange(0.,100000.,100.) # Married scenario
+    else:
+        TotalSSincomeArray = np.arange(0.,50000.,100.) # Other status scenario
     NonSSincomeArray = np.array([20000,40000,60000,80000,100000], dtype=float)
 
     NumPlots = len(NonSSincomeArray)
