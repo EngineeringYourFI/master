@@ -10,22 +10,22 @@ import numpy as np
 # import os
 # import matplotlib.pyplot as plt
 from scipy import optimize
-from TaxableSS import TaxableSS
+from TaxableSSconsolidated import TaxableSSconsolidated
 
 # Approach:
 # MaxStandardIncome = TaxableSSincome  (NonSSstandardIncome = 0, due to size of TaxableSSincome)
-#                   = f(LTcapGains,TotalSSincome,SingleOrMarried)
+#                   = f(LTcapGains,TotalSSincome,FilingStatus)
 # solve for LTcapGains
 # setting equal to 0 to use numerical solver (Newton-Rhapson method):
-# 0 = f(LTcapGains,TotalSSincome,SingleOrMarried) - MaxStandardIncome
+# 0 = f(LTcapGains,TotalSSincome,FilingStatus) - MaxStandardIncome
 
-def ZeroFn(LTcapGains,TotalSS,MaxStandardIncome,SingleOrMarried):
+def ZeroFn(LTcapGains,TotalSS,MaxStandardIncome,FilingStatus):
 
-    TaxableSSincome = TaxableSS(0.,TotalSS,LTcapGains,SingleOrMarried)
+    TaxableSSincome = TaxableSSconsolidated(0.+LTcapGains,TotalSS,FilingStatus)
 
     return TaxableSSincome - MaxStandardIncome
 
-def ComputeMaxCapGains(TotalSS,MaxStandardIncome,SingleOrMarried):
+def ComputeMaxCapGains(TotalSS,MaxStandardIncome,FilingStatus):
 
     # initialize
     # loop through cap gains values from $0 to $100K, determine what gives TaxableSSincome the closest to the
@@ -33,11 +33,11 @@ def ComputeMaxCapGains(TotalSS,MaxStandardIncome,SingleOrMarried):
     CapGainOptions = np.arange(0.,100000.,1000.)
     Delta = np.zeros(len(CapGainOptions))
     for ct in range(len(CapGainOptions)):
-        TaxableSSincome = TaxableSS(0.,TotalSS,CapGainOptions[ct],SingleOrMarried)
+        TaxableSSincome = TaxableSSconsolidated(0.+CapGainOptions[ct],TotalSS,FilingStatus)
         Delta[ct] = np.abs(MaxStandardIncome - TaxableSSincome)
 
     CapGainIV = CapGainOptions[np.argmin(Delta)]
 
-    MaxCapGains = optimize.newton(ZeroFn, x0=CapGainIV, args=(TotalSS,MaxStandardIncome,SingleOrMarried))
+    MaxCapGains = optimize.newton(ZeroFn, x0=CapGainIV, args=(TotalSS,MaxStandardIncome,FilingStatus))
 
     return MaxCapGains
