@@ -11,31 +11,28 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy import optimize
-from TaxableSS import TaxableSS
+from TaxableSSconsolidated import TaxableSSconsolidated
 
 # Approach:
 # MaxStandardIncome = MaxNonSSstandardIncome + TaxableSSincome
-#                   = MaxNonSSstandardIncome + f(MaxNonSSstandardIncome,TotalSSincome,LTcapGains,SingleOrMarried)
+#                   = MaxNonSSstandardIncome + f(MaxNonSSstandardIncome+LTcapGains,TotalSSincome,FilingStatus)
 # solve for MaxNonSSstandardIncome
 # setting equal to 0 to use numerical solver (Newton-Rhapson method):
-# 0 = MaxNonSSstandardIncome + f(MaxNonSSstandardIncome,TotalSSincome,LTcapGains,SingleOrMarried) - MaxStandardIncome
+# 0 = MaxNonSSstandardIncome + f(MaxNonSSstandardIncome+LTcapGains,TotalSSincome,FilingStatus) - MaxStandardIncome
 
-def ZeroFn(MaxNonSSstandardIncome,TotalSSincome,LTcapGains,MaxStandardIncome,SingleOrMarried):
+def ZeroFn(MaxNonSSstandardIncome,TotalSSincome,LTcapGains,MaxStandardIncome,FilingStatus):
 
-    debug = 1
-
-    TaxableSSincome = TaxableSS(MaxNonSSstandardIncome,TotalSSincome,LTcapGains,SingleOrMarried)
+    TaxableSSincome = TaxableSSconsolidated(MaxNonSSstandardIncome+LTcapGains,TotalSSincome,FilingStatus)
 
     return MaxNonSSstandardIncome + TaxableSSincome - MaxStandardIncome
 
-def ComputeMaxNonSSstandardIncome(TotalSSincome,SpecifiedIncome,MaxStandardIncome,SingleOrMarried):
+def ComputeMaxNonSSstandardIncome(TotalSSincome,SpecifiedIncome,MaxStandardIncome,FilingStatus):
 
     # initialize
     MaxNonSSstandardIncomeIV = MaxStandardIncome
     LTcapGains = SpecifiedIncome - MaxStandardIncome
 
     MaxNonSSstandardIncome = optimize.newton(ZeroFn, x0=MaxNonSSstandardIncomeIV,
-                                             args=(TotalSSincome,LTcapGains,MaxStandardIncome,SingleOrMarried))
-    debug = 1
+                                             args=(TotalSSincome,LTcapGains,MaxStandardIncome,FilingStatus))
 
     return MaxNonSSstandardIncome
