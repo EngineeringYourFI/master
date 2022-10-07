@@ -12,9 +12,11 @@ import numpy as np
 # from scipy import optimize
 
 from SupportMethods import ComputeTaxes
-from TaxableSS import TaxableSS
+# from TaxableSS import TaxableSS
+from TaxableSSconsolidated import TaxableSSconsolidated
 from ComputeMaxNonSSstandardIncome import ComputeMaxNonSSstandardIncome
 from ComputeMaxCapGains import ComputeMaxCapGains
+from TaxableIncomeTargetMethodWithSSI import TaxableIncomeTargetMethodWithSSI
 
 # Expand width of output in console
 import pandas as pd
@@ -23,7 +25,7 @@ pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=desired_width)
 
 # Project final balance, from inputs (e.g. initial balances, tax rates, etc.)
-def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, SingleOrMarried):
+def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus):
 
     # Initialize asset values
     PreTax = np.zeros(NumYearsToProject)
@@ -118,33 +120,10 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
 
             TotalCash[ct1] += TotalSS
 
-            # Determine how much room left for taxable SS income in IncDict['MaxStandardIncome']
-            RemainingStandardIncomeRoom = IncDict['MaxStandardIncome'] - TotalStandardIncome[ct1]
-
-            # Solve for max non-SS standard income that will, when added to taxable SS income, equal
-            # RemainingStandardIncomeRoom
-            MaxNonSSstandardIncome = ComputeMaxNonSSstandardIncome(TotalSS,SpecifiedIncome[ct1],
-                                                                   RemainingStandardIncomeRoom,SingleOrMarried)
-            # determine how much of social security income will be taxable
-            TaxableSSincome = RemainingStandardIncomeRoom - MaxNonSSstandardIncome
-            # Should be the same:
-            # TaxableSSincome = TaxableSS(MaxNonSSstandardIncome,TotalSS,SpecifiedIncome[ct1] -
-            #                             IncDict['MaxStandardIncome'],SingleOrMarried)
-
-            # if MaxNonSSstandardIncome is negative, that means TaxableSSincome is GREATER than
-            # RemainingStandardIncomeRoom (i.e. how much room left in standard deduction)
-            if MaxNonSSstandardIncome < 0.:
-                # first determine if it's possible to lower cap gains enough to get TaxableSSincome less than
-                # RemainingStandardIncomeRoom:
-                TaxableSSincomeNoOtherIncome = TaxableSS(0.,TotalSS,0.,SingleOrMarried)
-
-                # if so, then determine what cap gains will result in TaxableSSincome = RemainingStandardIncomeRoom
-                if TaxableSSincomeNoOtherIncome < RemainingStandardIncomeRoom:
-                    MaxCapGains = np.round(ComputeMaxCapGains(TotalSS,RemainingStandardIncomeRoom,SingleOrMarried),2)
-                    # TaxableSSincome should now equal RemainingStandardIncomeRoom
-                    TaxableSSincome = np.round(TaxableSS(0.,TotalSS,MaxCapGains,SingleOrMarried),2)
-                    # Reset SpecifiedIncome[ct1] to account for the lower cap gains
-                    SpecifiedIncome[ct1] = TotalStandardIncome[ct1] + TaxableSSincome + MaxCapGains
+            # Run TaxableIncomeTargetMethodWithSSI
+            TaxableSSincome, SpecifiedIncome[ct1], MaxNonSSstandardIncome, MaxCapGains = \
+                TaxableIncomeTargetMethodWithSSI(TotalStandardIncome[ct1],TotalSS,IncDict['MaxStandardIncome'],
+                                                 SpecifiedIncome[ct1],FilingStatus)
 
             TotalSSincome[ct1] = TotalSS
             TotalStandardIncome[ct1] += TaxableSSincome
@@ -267,14 +246,15 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
             if TotalIncome[ct1] < (SpecifiedIncome[ct1]-0.1):
                 NonSSstandardIncome = TotalStandardIncome[ct1]-TaxableSSincome
                 # recompute TaxableSSincome
-                TaxableSSincome = TaxableSS(NonSSstandardIncome,TotalSS,TotalLTcapGainsIncome[ct1],SingleOrMarried)
+                TaxableSSincome = TaxableSSconsolidated(NonSSstandardIncome+TotalLTcapGainsIncome[ct1],TotalSS,
+                                                        FilingStatus)
                 # recompute TotalStandardIncome[ct1]
                 TotalStandardIncome[ct1] = NonSSstandardIncome + TaxableSSincome
 
         # Taxes
 
         # Compute Taxes
-        Taxes[ct1] = ComputeTaxes(TaxRateInfo,SingleOrMarried,TotalStandardIncome[ct1],TotalLTcapGainsIncome[ct1])
+        Taxes[ct1] = ComputeTaxes(TaxRateInfo,FilingStatus,TotalStandardIncome[ct1],TotalLTcapGainsIncome[ct1])
 
         # subtract taxes from TotalCash
         CashMinusTaxes = TotalCash[ct1] - Taxes[ct1]
