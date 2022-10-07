@@ -11,6 +11,7 @@ import os
 # import matplotlib.pyplot as plt
 # from scipy import optimize
 
+from TaxRateInfoInput import TaxRateInfoInput
 from SupportMethods import MultiPlot
 from ProjFinalBalance import ProjFinalBalance
 from ProjFinalBalanceTraditional import ProjFinalBalanceTraditional
@@ -21,22 +22,8 @@ from ProjFinalBalanceTraditional import ProjFinalBalanceTraditional
 #############################################################################################################
 # Inputs
 
-# 2022 income tax bracket info (also applies for nonqualified dividends)
-# Note: can easily expand to also include Head of Household and Married Filing Seperately values in the future
-Rates = np.array([0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37], dtype=float)
-SingleIncomeBracketMins = np.array([0,10275,41775,89075,170050,215950,539900], dtype=float)
-MarriedIncomeBracketMins = SingleIncomeBracketMins*2
-MarriedIncomeBracketMins[-1] = 647850.
-
-# 2022 standard deductions
-SingleStandardDeduction = 12950.
-MarriedStandardDeduction = SingleStandardDeduction*2
-
-# 2022 long term cap gains tax bracket info (also applies for qualified dividends)
-CapGainsRatesLT = np.array([0.0, 0.15, 0.2], dtype=float)
-SingleIncomeBracketLTcapGainsMins = np.array([0,41675,459750], dtype=float)
-MarriedIncomeBracketLTcapGainsMins = np.array([0,83350,517200], dtype=float)
-
+# Bring in 2022 income tax bracket info, used for inputs (modify if beyond 2022)
+TaxRateInfo = TaxRateInfoInput()
 
 # Pre-tax assets initial value
 PreTaxIV = 400000. # Scenario 1
@@ -79,13 +66,13 @@ AgeSSwillStart = np.array([67,67], dtype=float)
 OtherIncomeSources = np.array([], dtype=float) # e.g. pension, in current dollars
 AgeOtherIncomeSourcesWillStart = np.array([], dtype=float)  # using first person in CurrentAge array
 # Maximum standard income to achieve (not LT cap gains)
-MaxStandardIncome = MarriedStandardDeduction
+MaxStandardIncome = TaxRateInfo['MarriedFilingJointlyStandardDeduction']
 # Income need to achieve, e.g. for maximizing ACA subsidies
 SpecifiedIncome = 50000.
 # When enough to collect SS, no longer need to worry about ACA subsidies, so set equal to top of 0% LT cap gains bracket
-SpecifiedIncomeAfterACA = MarriedIncomeBracketLTcapGainsMins[1]
+SpecifiedIncomeAfterACA = TaxRateInfo['MarriedFilingJointlyIncomeBracketLTcapGainsMins'][1]
 
-# Retirement Expenses
+# Retirement Expenses - in current year dollars, as is everything else in this simulation
 Exp = 40000. # Scenario 1
 # Exp = 45000. # Scenario 2
 
@@ -96,7 +83,7 @@ FutureExpenseAdjustmentsAge = np.array([66], dtype=float) # using first person i
 
 CurrentAge = np.array([40,38]) # array to allow for 2+ people (e.g. spouses), place oldest person first
 NumYearsToProject = 32
-SingleOrMarried = 'Married' #'Single'
+FilingStatus = 'MarriedFilingJointly' # 'Single' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
 
 # Annual investment interest rate (i.e. expected investment return)
 R = 0.07
@@ -106,8 +93,8 @@ OutDir = './'
 # Output file
 OutputFile = 'Output.txt'
 
-# Smart or Traditional Withdrawal Method
-SmartOrTraditionalWithdrawal = 'Traditional' #'Smart' #
+# Tax and Penalty Minimization (TPM) Withdrawal Method or Traditional Withdrawal Method
+TPMorTraditionalWithdrawal = 'TPM' #'Traditional' #
 
 # Plot flags
 AssetBalancesVsAge = True
@@ -117,14 +104,6 @@ YearlyValuesNoTotalCashVsAge = False
 #############################################################################################################
 
 # Capturing inputs in relevant dictionaries
-TaxRateInfo = {'Rates': Rates,
-               'SingleIncomeBracketMins': SingleIncomeBracketMins,
-               'MarriedIncomeBracketMins': MarriedIncomeBracketMins,
-               'SingleStandardDeduction': SingleStandardDeduction,
-               'MarriedStandardDeduction': MarriedStandardDeduction,
-               'CapGainsRatesLT': CapGainsRatesLT,
-               'SingleIncomeBracketLTcapGainsMins': SingleIncomeBracketLTcapGainsMins,
-               'MarriedIncomeBracketLTcapGainsMins': MarriedIncomeBracketLTcapGainsMins}
 
 IVdict = {'PreTaxIV': PreTaxIV,
           'PreTax457bIV': PreTax457bIV,
@@ -171,18 +150,21 @@ if not os.path.exists(OutDir):
 
 #############################################################################################################
 
-# Nominal run of ProjFinalBalance
-if SmartOrTraditionalWithdrawal == 'Smart':
-    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, SingleOrMarried)
+# Single run of ProjFinalBalance
+
+if TPMorTraditionalWithdrawal == 'TPM':
+    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus)
 else:
     ProjArrays = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R,
-                                             SingleOrMarried)
+                                             FilingStatus)
 
 #############################################################################################################
 
 # Print relevant numbers to output file (e.g. final asset values, etc.)
+
 file=open(OutputFile,'w')
 file.write('WithdrawalOptimization.py\n\n')
+
 file.write('Total Final: $'+'{:.2f}'.format(ProjArrays['TotalAssets'][-1])+'\n')
 file.write('PostTaxTotal Final: $'+'{:.2f}'.format(ProjArrays['PostTaxTotal'][-1])+'\n')
 file.write('PreTax Final: $'+'{:.2f}'.format(ProjArrays['PreTax'][-1])+'\n')
@@ -192,6 +174,7 @@ file.write('CashCushion Final: $'+'{:.2f}'.format(ProjArrays['CashCushion'][-1])
 file.write('CapGainsTotal Final: $'+'{:.2f}'.format(ProjArrays['CapGainsTotal'][-1])+'\n')
 file.write('Taxes Total: $'+'{:.2f}'.format(np.sum(ProjArrays['Taxes']))+'\n')
 file.write('Penalties Total: $'+'{:.2f}'.format(np.sum(ProjArrays['Penalties']))+'\n')
+
 file.close()
 
 #############################################################################################################
