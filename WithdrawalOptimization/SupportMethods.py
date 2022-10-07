@@ -7,6 +7,7 @@
 
 import numpy as np
 import copy
+import sys
 # import os
 import matplotlib.pyplot as plt
 # from scipy import optimize
@@ -14,19 +15,30 @@ import matplotlib.pyplot as plt
 #############################################################################################################
 
 # Compute total taxes due from both standard income and long term cap gains / qualified dividends
-def ComputeTaxes(TaxRateInfo,SingleOrMarried,TotalStandardIncome,TotalLTcapGainsIncome):
+def ComputeTaxes(TaxRateInfo,FilingStatus,TotalStandardIncome,TotalLTcapGainsIncome):
 
     # Use appropriate standard deduction, tax brackets
-    if SingleOrMarried=='Single':
+    if FilingStatus=='Single':
         StandardDeduction = TaxRateInfo['SingleStandardDeduction']
         # tax bracket mins are mutable objects (numpy arrays) within TaxRateInfo, so must make copies to avoid changing
         # accidentally (which would change them outside this function)
         IncomeBracketMins = copy.deepcopy(TaxRateInfo['SingleIncomeBracketMins'])
         IncomeBracketLTcapGainsMins = copy.deepcopy(TaxRateInfo['SingleIncomeBracketLTcapGainsMins'])
+    elif FilingStatus=='MarriedFilingJointly' or FilingStatus=='QualifyingWidow(er)':
+        StandardDeduction = TaxRateInfo['MarriedFilingJointlyStandardDeduction']
+        IncomeBracketMins = copy.deepcopy(TaxRateInfo['MarriedFilingJointlyIncomeBracketMins'])
+        IncomeBracketLTcapGainsMins = copy.deepcopy(TaxRateInfo['MarriedFilingJointlyIncomeBracketLTcapGainsMins'])
+    elif FilingStatus=='MarriedFilingSeparately':
+        StandardDeduction = TaxRateInfo['MarriedFilingSeparatelyStandardDeduction']
+        IncomeBracketMins = copy.deepcopy(TaxRateInfo['MarriedFilingSeparatelyIncomeBracketMins'])
+        IncomeBracketLTcapGainsMins = copy.deepcopy(TaxRateInfo['MarriedFilingSeparatelyIncomeBracketLTcapGainsMins'])
+    elif FilingStatus=='HeadOfHousehold':
+        StandardDeduction = TaxRateInfo['HeadOfHouseholdStandardDeduction']
+        IncomeBracketMins = copy.deepcopy(TaxRateInfo['HeadOfHouseholdIncomeBracketMins'])
+        IncomeBracketLTcapGainsMins = copy.deepcopy(TaxRateInfo['HeadOfHouseholdIncomeBracketLTcapGainsMins'])
     else:
-        StandardDeduction = TaxRateInfo['MarriedStandardDeduction']
-        IncomeBracketMins = copy.deepcopy(TaxRateInfo['MarriedIncomeBracketMins'])
-        IncomeBracketLTcapGainsMins = copy.deepcopy(TaxRateInfo['MarriedIncomeBracketLTcapGainsMins'])
+        print('Filing Status not recognized. Exiting.')
+        sys.exit()
 
     # Remove standard deduction from standard income to get taxable standard income
     # (and from LT cap gains if needed - though hopefully it's never wasted that way)
