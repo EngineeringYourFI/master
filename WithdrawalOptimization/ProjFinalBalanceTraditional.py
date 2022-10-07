@@ -12,7 +12,8 @@ import copy
 # from scipy import optimize
 
 from SupportMethods import ComputeTaxes
-from TaxableSS import TaxableSS
+# from TaxableSS import TaxableSS
+from TaxableSSconsolidated import TaxableSSconsolidated
 
 # Expand width of output in console
 import pandas as pd
@@ -21,7 +22,7 @@ pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=desired_width)
 
 # Use standard / traditional method for retirement withdrawal order: PostTax until depleted, PreTax until depleted, Roth
-def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, SingleOrMarried):
+def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus):
 
     # Initialize asset values
     PreTax = np.zeros(NumYearsToProject)
@@ -286,13 +287,14 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
 
             # determine how much of social security income will be taxable
             if TotalSS > 0.:
-                TaxableSSincome = TaxableSS(TotalStandardIncome[ct1],TotalSS,TotalLTcapGainsIncome[ct1],SingleOrMarried)
+                TaxableSSincome = TaxableSSconsolidated(TotalStandardIncome[ct1] + TotalLTcapGainsIncome[ct1],TotalSS,
+                                                        FilingStatus)
                 # Add to TotalStandardIncome[ct1] and TotalIncome[ct1]:
                 TotalStandardIncome[ct1] += TaxableSSincome
                 TotalIncome[ct1] += TaxableSSincome
 
             # Compute taxes
-            Taxes[ct1] = np.round(ComputeTaxes(TaxRateInfo,SingleOrMarried,TotalStandardIncome[ct1],
+            Taxes[ct1] = np.round(ComputeTaxes(TaxRateInfo,FilingStatus,TotalStandardIncome[ct1],
                                                TotalLTcapGainsIncome[ct1]),2)
 
             # subtract taxes from TotalCash
