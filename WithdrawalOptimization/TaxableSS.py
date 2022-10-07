@@ -1,10 +1,11 @@
 # Copyright (c) 2022 Engineering Your FI #
 # This work is licensed under a Creative Commons Attribution 4.0 International License. #
 # Thus, feel free to modify/add content as desired, and repost as desired, but please provide attribution to
-# engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/)
+# engineeringyourfi.com (in particular https://engineeringyourfi.com/how-much-of-my-social-security-income-will-be-taxed/)
 
 # TaxableSS.py
 
+import sys
 # import numpy as np
 # import copy
 # import os
@@ -13,7 +14,7 @@
 
 # Compute how much of SS income is taxable
 
-def TaxableSS(NonSSstandardIncome,TotalSSincome,LTcapGains,SingleOrMarried):
+def TaxableSS(NonSSincome,TotalSSincome,FilingStatus): #NonSSstandardIncome, LTcapGains
 
     # IRS worksheet that computes the amount of income from SS to include as taxable income:
     # https://www.irs.gov/pub/irs-pdf/p915.pdf#page=16.
@@ -24,7 +25,8 @@ def TaxableSS(NonSSstandardIncome,TotalSSincome,LTcapGains,SingleOrMarried):
 
     # 3. Combine the amounts from: Form 1040 or 1040-SR, lines 1, 2b, 3b, 4b, 5b, 7, and 8
     # i.e. all other income: wages, dividends, cap gains, IRA distributions, etc.
-    NonSSincome = NonSSstandardIncome + LTcapGains
+    # NonSSincome = NonSSstandardIncome + LTcapGains
+    # Now brought in as single argument
 
     # 4. Enter the amount, if any, from Form 1040 or 1040-SR, line 2a . - uncommon
     # 5. Enter the total of any exclusions/adjustments for: - uncommon
@@ -40,10 +42,14 @@ def TaxableSS(NonSSstandardIncome,TotalSSincome,LTcapGains,SingleOrMarried):
     # Married filing jointly, enter $32,000
     # Single, head of household, qualifying widow(er), or married filing separately and you lived apart from your spouse
     # for all of 2021, enter $25,000
-    if SingleOrMarried=='Single':
+    if FilingStatus=='MarriedFilingJointly':
+        MinOtherIncomeForSStoBeTaxed = 32000.
+    elif FilingStatus=='Single' or FilingStatus=='HeadOfHousehold' or FilingStatus=='MarriedFilingSeparately' or \
+            FilingStatus=='QualifyingWidow(er)':
         MinOtherIncomeForSStoBeTaxed = 25000.
     else:
-        MinOtherIncomeForSStoBeTaxed = 32000.
+        print('Filing Status not recognized. Exiting.')
+        sys.exit()
 
     # 10. Is the amount on line 9 less than the amount on line 8?
     # No: STOP. None of your benefits are taxable.
@@ -61,10 +67,14 @@ def TaxableSS(NonSSstandardIncome,TotalSSincome,LTcapGains,SingleOrMarried):
 
     # 11. Enter $12,000 if married filing jointly; $9,000 if single, head of household, qualifying widow(er), or married
     # filing separately and you lived apart from your spouse for all of 2021
-    if SingleOrMarried=='Single':
+    if FilingStatus=='MarriedFilingJointly':
+        DeltaToTopOf50percentTaxableBracket = 12000.
+    elif FilingStatus=='Single' or FilingStatus=='HeadOfHousehold' or FilingStatus=='MarriedFilingSeparately' or \
+            FilingStatus=='QualifyingWidow(er)':
         DeltaToTopOf50percentTaxableBracket = 9000.
     else:
-        DeltaToTopOf50percentTaxableBracket = 12000.
+        print('Filing Status not recognized. Exiting.')
+        sys.exit()
 
     # 12. Subtract line 11 from line 10. If zero or less, enter -0-
     if IncomeOverMinOtherIncome > DeltaToTopOf50percentTaxableBracket:
