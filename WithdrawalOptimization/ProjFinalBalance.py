@@ -25,7 +25,8 @@ pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=desired_width)
 
 # Project final balance, from inputs (e.g. initial balances, tax rates, etc.)
-def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus):
+def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus,
+                     TPMwithdraw457bFirst):
 
     # Initialize asset values
     PreTax = np.zeros(NumYearsToProject)
@@ -132,20 +133,21 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
 
         # make withdrawals as needed to achieve specified income
 
-        # withdraw 457b if room:
-        RemainingStandardIncomeRoom = IncDict['MaxStandardIncome'] - TotalStandardIncome[ct1]
-        if RemainingStandardIncomeRoom > 0:
-            # if enough funds in 457b to cover the entire remainder
-            if PreTax457b[ct1] >= RemainingStandardIncomeRoom:
-                PreTax457b[ct1] -= RemainingStandardIncomeRoom
-                TotalCash[ct1] += RemainingStandardIncomeRoom
-                TotalStandardIncome[ct1] += RemainingStandardIncomeRoom
-                TotalIncome[ct1] += RemainingStandardIncomeRoom
-            else: # withdraw remaining balance
-                TotalCash[ct1] += PreTax457b[ct1]
-                TotalStandardIncome[ct1] += PreTax457b[ct1]
-                TotalIncome[ct1] += PreTax457b[ct1]
-                PreTax457b[ct1] = 0.
+        if TPMwithdraw457bFirst:
+            # withdraw 457b if room:
+            RemainingStandardIncomeRoom = IncDict['MaxStandardIncome'] - TotalStandardIncome[ct1]
+            if RemainingStandardIncomeRoom > 0:
+                # if enough funds in 457b to cover the entire remainder
+                if PreTax457b[ct1] >= RemainingStandardIncomeRoom:
+                    PreTax457b[ct1] -= RemainingStandardIncomeRoom
+                    TotalCash[ct1] += RemainingStandardIncomeRoom
+                    TotalStandardIncome[ct1] += RemainingStandardIncomeRoom
+                    TotalIncome[ct1] += RemainingStandardIncomeRoom
+                else: # withdraw remaining balance
+                    TotalCash[ct1] += PreTax457b[ct1]
+                    TotalStandardIncome[ct1] += PreTax457b[ct1]
+                    TotalIncome[ct1] += PreTax457b[ct1]
+                    PreTax457b[ct1] = 0.
 
         # withdraw PreTax if room, rollover to Roth if not 60 yet
         RemainingStandardIncomeRoom = IncDict['MaxStandardIncome'] - TotalStandardIncome[ct1]
@@ -176,6 +178,23 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
                 TotalStandardIncome[ct1] += PreTax[ct1]
                 TotalIncome[ct1] += PreTax[ct1]
                 PreTax[ct1] = 0.
+
+        if TPMwithdraw457bFirst == False:
+            # withdraw 457b if room:
+            RemainingStandardIncomeRoom = IncDict['MaxStandardIncome'] - TotalStandardIncome[ct1]
+            if RemainingStandardIncomeRoom > 0:
+                # if enough funds in 457b to cover the entire remainder
+                if PreTax457b[ct1] >= RemainingStandardIncomeRoom:
+                    PreTax457b[ct1] -= RemainingStandardIncomeRoom
+                    TotalCash[ct1] += RemainingStandardIncomeRoom
+                    TotalStandardIncome[ct1] += RemainingStandardIncomeRoom
+                    TotalIncome[ct1] += RemainingStandardIncomeRoom
+                else: # withdraw remaining balance
+                    TotalCash[ct1] += PreTax457b[ct1]
+                    TotalStandardIncome[ct1] += PreTax457b[ct1]
+                    TotalIncome[ct1] += PreTax457b[ct1]
+                    PreTax457b[ct1] = 0.
+
 
         # withdraw post-tax:
 
