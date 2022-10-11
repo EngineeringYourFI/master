@@ -96,6 +96,9 @@ OutputFile = 'Output.txt'
 # Tax and Penalty Minimization (TPM) Withdrawal Method or Traditional Withdrawal Method
 TPMorTraditionalWithdrawal = 'TPM' #'Traditional' #
 
+# TPM Method - Withdraw from 457b or Pretax first
+TPMwithdraw457bFirst = False
+
 # Plot flags
 AssetBalancesVsAge = True
 YearlyValuesVsAge = False
@@ -153,7 +156,8 @@ if not os.path.exists(OutDir):
 # Single run of ProjFinalBalance
 
 if TPMorTraditionalWithdrawal == 'TPM':
-    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus)
+    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus,
+                                  TPMwithdraw457bFirst)
 else:
     ProjArrays = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R,
                                              FilingStatus)
