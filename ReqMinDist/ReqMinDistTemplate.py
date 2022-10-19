@@ -215,7 +215,7 @@ if ReqWR:
          'xmin': ProjArrays['Age'][0], 'xmax': ProjArrays['Age'][-1],
          'ylabel': 'Required Withdrawal Rate (%)',
          'xlabel': 'Age',
-         'TitleText': 'Yearly Values vs Age',
+         'TitleText': 'Required Withdrawal Rate vs Age',
          'LegendLoc': 'upper right',
          'SaveFile': OutDir+'WRvsAge.png'}
     # Update dict to have plot specific values
