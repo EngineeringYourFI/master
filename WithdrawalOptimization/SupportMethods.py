@@ -8,9 +8,7 @@
 import numpy as np
 import copy
 import sys
-# import os
 import matplotlib.pyplot as plt
-# from scipy import optimize
 
 #############################################################################################################
 
@@ -189,7 +187,7 @@ def MultiPlot(PlotDict):
 
     plt.ylabel(PlotDict['ylabel'], fontsize=PlotDict['ylabelFontSize'])
     plt.xlabel(PlotDict['xlabel'], fontsize=PlotDict['xlabelFontSize'])
-    plt.title(PlotDict['TitleText'], y=PlotDict['Title_yoffset'], fontsize=PlotDict['TitleFontSize'])
+    plt.title(PlotDict['TitleText'], x=PlotDict['Title_xoffset'], y=PlotDict['Title_yoffset'], fontsize=PlotDict['TitleFontSize'])
     plt.gca().tick_params(axis='both', which='major', labelsize=30)
     plt.grid(color='gray',linestyle='--') # or just plt.grid(True)  color='lightgray'
     plt.legend(loc=PlotDict['LegendLoc'],fontsize=PlotDict['LegendFontSize'],numpoints=1)
