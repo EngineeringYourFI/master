@@ -7,13 +7,14 @@
 
 import numpy as np
 import copy
-# import os
-# import matplotlib.pyplot as plt
-# from scipy import optimize
 
 from SupportMethods import ComputeTaxes
-# from TaxableSS import TaxableSS
 from TaxableSSconsolidated import TaxableSSconsolidated
+from WithdrawFrom457bTraditional import WithdrawFrom457bTraditional
+from WithdrawFromPreTaxTraditional import WithdrawFromPreTaxTraditional
+from WithdrawFromRothTraditional import WithdrawFromRothTraditional
+from WithdrawFromRothTraditionalWithPenalty import WithdrawFromRothTraditionalWithPenalty
+from ComputeRMD import ComputeRMD
 
 # Expand width of output in console
 import pandas as pd
@@ -24,29 +25,36 @@ np.set_printoptions(linewidth=desired_width)
 # Use standard / traditional method for retirement withdrawal order: PostTax until depleted, PreTax until depleted, Roth
 def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus):
 
+    # number of people (1 or 2)
+    NumPeople = np.size(IVdict['PreTaxIV'])
+
     # Initialize asset values
-    PreTax = np.zeros(NumYearsToProject)
-    PreTax457b = np.zeros(NumYearsToProject)
+    PreTax = np.zeros((NumYearsToProject,NumPeople))
+    PreTax457b = np.zeros((NumYearsToProject,NumPeople))
     PostTax = np.zeros((NumYearsToProject,np.size(IVdict['PostTaxIV'])))
     PostTaxCG = np.zeros((NumYearsToProject,np.size(IVdict['PostTaxIV'])))
-    Roth = np.zeros(NumYearsToProject)
-    RothContributions = np.zeros(NumYearsToProject)
+    Roth = np.zeros((NumYearsToProject,NumPeople))
+    RothContributions = np.zeros((NumYearsToProject,NumPeople))
     CashCushion = np.zeros(NumYearsToProject)
+    PreTaxTotal = np.zeros(NumYearsToProject)
+    PreTax457bTotal = np.zeros(NumYearsToProject)
     PostTaxTotal = np.zeros(NumYearsToProject)
     CapGainsTotal = np.zeros(NumYearsToProject)
+    RothTotal = np.zeros(NumYearsToProject)
     TotalAssets = np.zeros(NumYearsToProject)
 
-    PreTax[0] = IVdict['PreTaxIV']
-    PreTax457b[0] = IVdict['PreTax457bIV']
+    PreTax[0,:] = IVdict['PreTaxIV']
+    PreTax457b[0,:] = IVdict['PreTax457bIV']
     PostTax[0,:] = IVdict['PostTaxIV']
     PostTaxCG[0,:] = IVdict['CurrentUnrealizedCapGains']
-    Roth[0] = IVdict['RothIV']
-    RothContributions[0] = IVdict['RothContributions']
+    Roth[0,:] = IVdict['RothIV']
+    RothContributions[0,:] = IVdict['RothContributions']
     CashCushion[0] = IVdict['CashCushion']
 
     # Initialize Yearly values
     Age = np.zeros((NumYearsToProject,np.size(CurrentAge)))
     Age[0,:] = CurrentAge
+    RMD = np.zeros((NumYearsToProject,np.size(CurrentAge)))
     TotalCash = np.zeros(NumYearsToProject)
     TotalStandardIncome = np.zeros(NumYearsToProject)
     TotalLTcapGainsIncome = np.zeros(NumYearsToProject)
@@ -56,6 +64,7 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
     SpecifiedIncome = np.zeros(NumYearsToProject) #not used in this method, but it does make plotting consistent
     Taxes = np.zeros(NumYearsToProject)
     Penalties = np.zeros(NumYearsToProject)
+    RMDtotal = np.zeros(NumYearsToProject)
 
     # loop over years
     for ct1 in range(0,NumYearsToProject):
@@ -63,10 +72,13 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
         # apply investment growth to accounts if not at first year
         if ct1 > 0:
             Age[ct1,:] = Age[ct1-1,:] + 1
-            PreTax[ct1] = np.round(PreTax[ct1-1]*(1+R),2)
-            PreTax457b[ct1] = np.round(PreTax457b[ct1-1]*(1+R),2)
-            Roth[ct1] = np.round(Roth[ct1-1]*(1+R),2)
-            RothContributions[ct1] = RothContributions[ct1-1]
+
+            # tax advantaged accounts
+            for ct2 in range(np.shape(PreTax)[1]):
+                PreTax[ct1,ct2] = np.round(PreTax[ct1-1,ct2]*(1+R),2)
+                PreTax457b[ct1,ct2] = np.round(PreTax457b[ct1-1,ct2]*(1+R),2)
+                Roth[ct1,ct2] = np.round(Roth[ct1-1,ct2]*(1+R),2)
+            RothContributions[ct1,:] = RothContributions[ct1-1,:]
             CashCushion[ct1] = CashCushion[ct1-1]
             # loop over post-tax lots
             for ct2 in range(np.shape(PostTax)[1]):
@@ -119,6 +131,25 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
                     # assuming all "other income sources" are taxed as standard income (vs LT cap gains, social security, etc.)
                     TotalStandardIncome[ct1] += IncDict['OtherIncomeSources'][ct2]
                     TotalIncome[ct1] += IncDict['OtherIncomeSources'][ct2]
+
+            # Required Minimum Distributions (RMDs)
+            for ct2 in range(np.shape(PreTax)[1]):
+                if Age[ct1,ct2] >= 72.:
+                    # PreTax
+                    RMDpretax, WR = ComputeRMD(PreTaxTemp[ct1,ct2],Age[ct1,ct2])
+                    # 457b
+                    RMD457b, WR = ComputeRMD(PreTax457bTemp[ct1,ct2],Age[ct1,ct2])
+                    # Sum of all pretax accounts
+                    RMD[ct1,ct2] = RMDpretax + RMD457b
+                    # add to cash and income totals
+                    TotalCash[ct1] += RMD[ct1,ct2]
+                    TotalStandardIncome[ct1] += RMD[ct1,ct2]
+                    TotalIncome[ct1] += RMD[ct1,ct2]
+                    # remove from pretax accounts
+                    PreTaxTemp[ct1,ct2] -= RMDpretax
+                    PreTax457bTemp[ct1,ct2] -= RMD457b
+
+            RMDtotal[ct1] = np.sum(RMD[ct1,:])
 
             # Social security
             TotalSS = 0.
@@ -188,65 +219,32 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
                     # recompute RemainingCashNeeded
                     RemainingCashNeeded = TotalCashNeeded - TotalCash[ct1]
 
-
             # if still not enough cash, withdraw from 457b:
             RemainingCashNeeded = TotalCashNeeded - TotalCash[ct1]
             if RemainingCashNeeded > 0:
-                # if enough funds in 457b to cover the entire remainder
-                if PreTax457bTemp[ct1] >= RemainingCashNeeded:
-                    PreTax457bTemp[ct1] -= RemainingCashNeeded
-                    TotalCash[ct1] += RemainingCashNeeded
-                    TotalStandardIncome[ct1] += RemainingCashNeeded
-                    TotalIncome[ct1] += RemainingCashNeeded
-                else: # withdraw remaining balance
-                    TotalCash[ct1] += PreTax457bTemp[ct1]
-                    TotalStandardIncome[ct1] += PreTax457bTemp[ct1]
-                    TotalIncome[ct1] += PreTax457bTemp[ct1]
-                    PreTax457bTemp[ct1] = 0.
+                # loop over all 457b accounts (one or two)
+                for ct2 in range(np.shape(PreTax457b)[1]):
+                    PreTax457bTemp[ct1,ct2], TotalCash[ct1], TotalStandardIncome[ct1], TotalIncome[ct1] = \
+                        WithdrawFrom457bTraditional(TotalCashNeeded,TotalStandardIncome[ct1],PreTax457bTemp[ct1,ct2],
+                                                    TotalCash[ct1],TotalIncome[ct1])
 
             # if still not enough cash and over 60, withdraw from PreTaxTemp
             RemainingCashNeeded = TotalCashNeeded - TotalCash[ct1]
-            if (RemainingCashNeeded > 0.) and (Age[ct1,0] >= 60.):
-                # if enough funds in PreTaxTemp to cover the entire remainder
-                if PreTaxTemp[ct1] > RemainingCashNeeded:
-                    PreTaxTemp[ct1] -= RemainingCashNeeded
-                    TotalCash[ct1] += RemainingCashNeeded
-                    TotalStandardIncome[ct1] += RemainingCashNeeded
-                    TotalIncome[ct1] += RemainingCashNeeded
-                else: # withdraw remaining balance
-                    TotalCash[ct1] += PreTaxTemp[ct1]
-                    TotalStandardIncome[ct1] += PreTaxTemp[ct1]
-                    TotalIncome[ct1] += PreTaxTemp[ct1]
-                    PreTaxTemp[ct1] = 0.
+            if RemainingCashNeeded > 0:
+                # loop over all PreTax accounts (one or two)
+                for ct2 in range(np.shape(PreTaxTemp)[1]):
+                    PreTaxTemp[ct1,ct2], TotalCash[ct1], TotalStandardIncome[ct1], TotalIncome[ct1] = \
+                        WithdrawFromPreTaxTraditional(TotalCashNeeded,TotalStandardIncome[ct1],PreTaxTemp[ct1,ct2],
+                                                      TotalCash[ct1],TotalIncome[ct1],Age[ct1,ct2])
 
             # if still not enough cash, withdraw from RothTemp
             RemainingCashNeeded = TotalCashNeeded - TotalCash[ct1]
             if RemainingCashNeeded > 0:
-                # first determine if Age >= 60
-                if Age[ct1,0] >= 60.:
-                    # pull from entire balance without worrying about anything - no penalties or taxes
-                    # if RothTemp balance greater than remaining cash needed:
-                    if RothTemp[ct1] > RemainingCashNeeded:
-                        TotalCash[ct1] += RemainingCashNeeded
-                        RothTemp[ct1] -= RemainingCashNeeded
-                    else: # withdraw the entire balance
-                        TotalCash[ct1] += RothTemp[ct1]
-                        RothTemp[ct1] = 0.
-                else: # haven't hit 60 (actually 59.5) yet, so need to avoid growth if possible
-                    # so only pull from original contributions
-                    # not doing RothTemp rollovers from PreTaxTemp in this method, using PreTaxTemp withdrawals
-                    # immediately for expenses
-                    # if contributions cover entire remaining cash needed:
-                    if RothContributionsTemp[ct1] > RemainingCashNeeded:
-                        TotalCash[ct1] += RemainingCashNeeded
-                        RothContributionsTemp[ct1] -= RemainingCashNeeded
-                        RothTemp[ct1] -= RemainingCashNeeded
-                    else:
-                        # then just withdraw remaining contributions
-                        TotalCash[ct1] += RothContributionsTemp[ct1]
-                        RothTemp[ct1] -= RothContributionsTemp[ct1]
-                        RothContributionsTemp[ct1] = 0.
-
+                # loop over all Roth accounts (one or two)
+                for ct2 in range(np.shape(RothTemp)[1]):
+                    RothTemp[ct1,ct2], RothContributionsTemp[ct1,ct2], TotalCash[ct1] = \
+                        WithdrawFromRothTraditional(TotalCashNeeded,RothTemp[ct1,ct2],RothContributionsTemp[ct1,ct2],
+                                                    TotalCash[ct1],Age[ct1,ct2])
 
             # if still not enough cash, pull from CashCushionTemp
             RemainingCashNeeded = TotalCashNeeded - TotalCash[ct1]
@@ -264,16 +262,11 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
             # but at least no taxes)
             RemainingCashNeeded = TotalCashNeeded - TotalCash[ct1]
             if RemainingCashNeeded > 0:
-                if Age[ct1,0] < 60.:
-                    # if RothTemp balance is >= 1.1*(cash needed) (i.e. enough to cover cash needed and 10% penalty)
-                    if RothTemp[ct1] >= np.round(1.1*RemainingCashNeeded,2):
-                        Penalties[ct1] += 0.1*RemainingCashNeeded
-                        TotalCash[ct1] += RemainingCashNeeded
-                        RothTemp[ct1] -= np.round(1.1*RemainingCashNeeded,2)
-                    else: # withdraw the entire balance
-                        Penalties[ct1] += 0.1*RothTemp[ct1]
-                        TotalCash[ct1] += np.round(RothTemp[ct1]/1.1,2)
-                        RothTemp[ct1] = 0.
+                # loop over all Roth accounts (one or two)
+                for ct2 in range(np.shape(RothTemp)[1]):
+                    RothTemp[ct1,ct2], TotalCash[ct1], Penalties[ct1] = \
+                        WithdrawFromRothTraditionalWithPenalty(TotalCashNeeded,RothTemp[ct1,ct2],TotalCash[ct1],
+                                                               Age[ct1,ct2],Penalties[ct1])
 
             # TODO: if still not enough cash and Age < 60, next pull from PreTaxTemp (paying taxes AND 10% penalty)
 
@@ -338,15 +331,27 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
         # Compute total cap gains
         CapGainsTotal[ct1] = np.sum(PostTaxCG[ct1,:])
 
+        # Compute total PreTax
+        PreTaxTotal[ct1] = np.sum(PreTax[ct1,:])
+
+        # Compute total PreTax457b
+        PreTax457bTotal[ct1] = np.sum(PreTax457b[ct1,:])
+
+        # Compute total Roth
+        RothTotal[ct1] = np.sum(Roth[ct1,:])
+
         # Compute total assets
-        TotalAssets[ct1] = PostTaxTotal[ct1] + PreTax[ct1] + PreTax457b[ct1] + Roth[ct1] + CashCushion[ct1]
+        TotalAssets[ct1] = PostTaxTotal[ct1] + PreTaxTotal[ct1] + PreTax457bTotal[ct1] + RothTotal[ct1] + CashCushion[ct1]
 
     # assemble output dictionary
     ProjArrays = {'PreTax': PreTax,
+                  'PreTaxTotal': PreTaxTotal,
                   'PreTax457b': PreTax457b,
+                  'PreTax457bTotal': PreTax457bTotal,
                   'PostTax': PostTax,
                   'PostTaxCG': PostTaxCG,
                   'Roth': Roth,
+                  'RothTotal': RothTotal,
                   'CashCushion': CashCushion,
                   'PostTaxTotal': PostTaxTotal,
                   'CapGainsTotal': CapGainsTotal,
