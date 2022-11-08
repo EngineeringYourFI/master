@@ -1,49 +1,65 @@
 # Copyright (c) 2022 Engineering Your FI #
 # This work is licensed under a Creative Commons Attribution 4.0 International License. #
 # Thus, feel free to modify/add content as desired, and repost as desired, but please provide attribution to
-# engineeringyourfi.com (in particular https://engineeringyourfi.com/how-to-pay-no-taxes-on-social-security-income/)
+# engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/)
 
 # TaxableIncomeTargetMethodWithSSI.py
 
 import numpy as np
 from TaxableSSconsolidated import TaxableSSconsolidated
-from ComputeMaxNonSSstandardIncome import ComputeMaxNonSSstandardIncome
-from ComputeMaxCapGains import ComputeMaxCapGains
+from ComputeMaxAdjustableNonSSstandardIncome import ComputeMaxAdjustableNonSSstandardIncome
 
-def TaxableIncomeTargetMethodWithSSI(TotalStandardIncome,TotalSS,MaxStandardIncome,SpecifiedIncome,FilingStatus):
+def TaxableIncomeTargetMethodWithSSI(NonadjustableStandardIncome,NonadjustableLTcapGainsIncome,TotalSS,
+                                     MaxStandardIncome,MaxTotalIncome,FilingStatus):
 
-    # Determine how much room left in standard income
-    RemainingStandardIncomeRoom = MaxStandardIncome - TotalStandardIncome
+    # Start by adjusting MaxStandardIncome and MaxTotalIncome if needed
+    MinTaxableSS = np.round(TaxableSSconsolidated(NonadjustableStandardIncome+NonadjustableLTcapGainsIncome,TotalSS,
+                                                  FilingStatus),2)
+    MinStandardIncome = NonadjustableStandardIncome + MinTaxableSS
+    if MinStandardIncome > MaxStandardIncome:
+        MaxStandardIncome = MinStandardIncome
 
-    # Solve for max non-SS standard income that will, when added to taxable SS income, equal RemainingStandardIncomeRoom
-    MaxNonSSstandardIncome = np.round(ComputeMaxNonSSstandardIncome(TotalSS,SpecifiedIncome,RemainingStandardIncomeRoom,
-                                                           FilingStatus),2)
-    # determine how much of social security income will be taxable
-    TaxableSSincome = RemainingStandardIncomeRoom - MaxNonSSstandardIncome
-    # Should be the same, even if MaxNonSSstandardIncome is negative (see below):
-    # TaxableSSincome = TaxableSSconsolidated(MaxNonSSstandardIncome + SpecifiedIncome-MaxStandardIncome,TotalSS,
-    #                                         FilingStatus)
+    MinTotalIncome = NonadjustableStandardIncome + NonadjustableLTcapGainsIncome + MinTaxableSS
+    if MinTotalIncome > MaxTotalIncome:
+        MaxTotalIncome = MinTotalIncome
 
-    # if MaxNonSSstandardIncome is negative, that means TaxableSSincome is GREATER than RemainingStandardIncomeRoom
-    # (i.e. how much room left in standard deduction)
-    if MaxNonSSstandardIncome < 0.:
-        # first determine if it's possible to lower cap gains enough to get TaxableSSincome less than
-        # RemainingStandardIncomeRoom:
-        TaxableSSincomeNoOtherIncome = TaxableSSconsolidated(0.,TotalSS,FilingStatus)
+    # Compute MaxAdjustableNonSSstandardIncome if any room
+    if MinStandardIncome < MaxStandardIncome:
 
-        # if so, then determine what cap gains will result in TaxableSSincome = RemainingStandardIncomeRoom
-        if TaxableSSincomeNoOtherIncome < RemainingStandardIncomeRoom:
-            MaxCapGains = np.round(ComputeMaxCapGains(TotalSS,RemainingStandardIncomeRoom,FilingStatus),2)
-            # TaxableSSincome should now equal RemainingStandardIncomeRoom
-            TaxableSSincome = np.round(TaxableSSconsolidated(0.+MaxCapGains,TotalSS,FilingStatus),2)
-            # Reset SpecifiedIncome to account for the lower cap gains
-            SpecifiedIncome = np.round(TotalStandardIncome + TaxableSSincome + MaxCapGains,2) # sometimes requires np.round
-            # change MaxNonSSstandardIncome to zero (instead of negative), since we're lowering our capital gains to
-            # allow TaxableSSincome = RemainingStandardIncomeRoom, and have no room for additional NonSSstandardIncome
-            MaxNonSSstandardIncome = 0.
-        else:
-            MaxCapGains = SpecifiedIncome - MaxStandardIncome
+        # Solve for MaxAdjustableNonSSstandardIncome such that
+        # NonadjustableStandardIncome + TaxableSS(NonadjustableStandardIncome,NonadjustableLTcapGainsIncome,TotalSS,
+        # MaxAdjustableNonSSstandardIncome,0) + MaxAdjustableNonSSstandardIncome = MaxStandardIncome
+        # Where MaxAdjustableLTcapGainsIncome set equal to zero.
+
+        MaxAdjustableNonSSstandardIncome = \
+            np.round(ComputeMaxAdjustableNonSSstandardIncome(NonadjustableStandardIncome,NonadjustableLTcapGainsIncome,
+                                                             TotalSS,MaxStandardIncome,FilingStatus),2)
+
+        # Compute how much of social security income will be taxable
+        TaxableSS = MaxStandardIncome - NonadjustableStandardIncome - MaxAdjustableNonSSstandardIncome
+        # # To verify, should be the same:
+        # LTcapGains = NonadjustableLTcapGainsIncome
+        # TaxableSS = np.round(TaxableSSconsolidated(NonadjustableStandardIncome+MaxAdjustableNonSSstandardIncome+
+        #                                            LTcapGains,TotalSS,FilingStatus),2)
+
+        # if TaxableSS < 0.85*TotalSS, need to set MaxAdjustableNonSSstandardIncome as zero (as any increase in LT cap
+        # gains will increase TaxableSS, and thus push standard income beyond MaxStandardIncome), which means
+        # changing output MaxTotalIncome to MaxStandardIncome + NonadjustableLTcapGainsIncome
+        if TaxableSS <= (0.85*TotalSS - 0.01):
+            MaxTotalIncome = MaxStandardIncome + NonadjustableLTcapGainsIncome
+
+            if MinTotalIncome > MaxTotalIncome: # in case this ever happens
+                print('MinTotalIncome > MaxTotalIncome: Figure out what to do in this situation (if ever encountered).')
+
+        # If TaxableSS = 0.85*Total, then it's already maximized and additional LT cap gains won't increase TaxableSS,
+        # so we can leave MaxTotalIncome as-is, indicating that MaxAdjustableLTcapGainsIncome can be increased until
+        # total income reaches MaxTotalIncome.
+        # Could also directly compute MaxAdjustableLTcapGainsIncome = MaxTotalIncome - (NonadjustableStandardIncome +
+        # NonadjustableLTcapGainsIncome + TaxableSS + MaxAdjustableNonSSstandardIncome)
+        # But not needed, since just outputting MaxTotalIncome.
+
     else:
-        MaxCapGains = SpecifiedIncome - MaxStandardIncome
+        # MaxAdjustableNonSSstandardIncome = 0.
+        TaxableSS = MinTaxableSS
 
-    return TaxableSSincome, SpecifiedIncome, MaxNonSSstandardIncome, MaxCapGains
+    return TaxableSS, MaxStandardIncome, MaxTotalIncome
