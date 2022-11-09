@@ -95,7 +95,10 @@ FutureExpenseAdjustmentsAge = np.array([66], dtype=float) # using first person i
 CurrentAge = np.array([40,38]) # Scenario 1 & 2
 # CurrentAge = np.array([40]) # Scenario 3, single person
 NumYearsToProject = 52
+# Scenario 1 & 2
 FilingStatus = 'MarriedFilingJointly' # 'Single' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
+# Scenario 3, single person
+# FilingStatus = 'Single' # 'MarriedFilingJointly' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
 
 # Annual investment interest rate (i.e. expected investment return)
 R = 0.07
@@ -198,6 +201,7 @@ file.write('CashCushion Final: $'+'{:.2f}'.format(ProjArrays['CashCushion'][-1])
 file.write('CapGainsTotal Final: $'+'{:.2f}'.format(ProjArrays['CapGainsTotal'][-1])+'\n')
 file.write('Taxes Total: $'+'{:.2f}'.format(np.sum(ProjArrays['Taxes']))+'\n')
 file.write('Penalties Total: $'+'{:.2f}'.format(np.sum(ProjArrays['Penalties']))+'\n')
+file.write('RMDs Total: $'+'{:.2f}'.format(np.sum(ProjArrays['RMDtotal']))+'\n')
 
 file.close()
 
@@ -247,8 +251,9 @@ if AssetBalancesVsAge:
 # Plot yearly results
 if YearlyValuesVsAge:
 
-    # SpecifiedIncome, TotalStandardIncome, TotalLTcapGainsIncome, TotalSSincome, TotalIncome, TotalCash, Expenses, Taxes
-    NumPlots = 9
+    # SpecifiedIncome, TotalStandardIncome, TotalLTcapGainsIncome, TotalSSincome, TotalIncome, TotalCash, Expenses,
+    # Taxes, Penalties, RMDs
+    NumPlots = 10
     ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
     ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
     ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
@@ -259,10 +264,11 @@ if YearlyValuesVsAge:
     ValuesArray[6,:] = ProjArrays['Expenses']/1000.
     ValuesArray[7,:] = ProjArrays['Taxes']/1000.
     ValuesArray[8,:] = ProjArrays['Penalties']/1000.
+    ValuesArray[9,:] = ProjArrays['RMDtotal']/1000.
 
     PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
-                      'TotalCash','Expenses','Taxes','Penalties']
-    PlotColorArray = ['k','r','b','g','c','m','y','limegreen','fuchsia']
+                      'TotalCash','Expenses','Taxes','Penalties','RMDs']
+    PlotColorArray = ['k','r','b','g','c','m','y','limegreen','fuchsia','saddlebrown'] #orangered, chocolate, peru, darkorange, gold, olive, slategrey
 
     # Initialize plot dict using default dict
     PlotDict = copy.deepcopy(DefaultPlotDict)
@@ -289,7 +295,7 @@ if YearlyValuesVsAge:
 # and plot without TotalCash
 if YearlyValuesNoTotalCashVsAge:
 
-    NumPlots = 8
+    NumPlots = 9
     ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
     ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
     ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
@@ -299,10 +305,11 @@ if YearlyValuesNoTotalCashVsAge:
     ValuesArray[5,:] = ProjArrays['Expenses']/1000.
     ValuesArray[6,:] = ProjArrays['Taxes']/1000.
     ValuesArray[7,:] = ProjArrays['Penalties']/1000.
+    ValuesArray[8,:] = ProjArrays['RMDtotal']/1000.
 
     PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
-                      'Expenses','Taxes','Penalties']
-    PlotColorArray = ['k','r','b','g','c','y','limegreen','fuchsia']
+                      'Expenses','Taxes','Penalties','RMDs']
+    PlotColorArray = ['k','r','b','g','c','y','limegreen','fuchsia','saddlebrown']
 
     # Initialize plot dict using default dict
     PlotDict = copy.deepcopy(DefaultPlotDict)
@@ -334,17 +341,17 @@ if TPMorTraditionalWithdrawal == 'Both' and AssetBalancesVsAgeTPMvsTraditionalDi
 
     NumPlots = 6 #7 # TotalAssets, PostTaxTotal, PreTax, PreTax457b, Roth, CashCushion #, CapGainsTotal
     AssetsArray = np.zeros((NumPlots,len(ProjArrays['TotalAssets'])))
-    AssetsArray[0,:] = (ProjArraysTraditional['TotalAssets']-ProjArrays['TotalAssets'])/1.e6
-    AssetsArray[1,:] = (ProjArraysTraditional['PostTaxTotal']-ProjArrays['PostTaxTotal'])/1.e6
-    AssetsArray[2,:] = (ProjArraysTraditional['PreTaxTotal']-ProjArrays['PreTaxTotal'])/1.e6
-    AssetsArray[3,:] = (ProjArraysTraditional['PreTax457bTotal']-ProjArrays['PreTax457bTotal'])/1.e6
-    AssetsArray[4,:] = (ProjArraysTraditional['RothTotal']-ProjArrays['RothTotal'])/1.e6
-    AssetsArray[5,:] = (ProjArraysTraditional['CashCushion']-ProjArrays['CashCushion'])/1.e6
-    # AssetsArray[6,:] = (ProjArraysTraditional['CapGainsTotal']-ProjArrays['CapGainsTotal'])/1.e6
+    AssetsArray[0,:] = (ProjArrays['TotalAssets']-ProjArraysTraditional['TotalAssets'])/1.e6
+    AssetsArray[1,:] = (ProjArrays['PostTaxTotal']-ProjArraysTraditional['PostTaxTotal'])/1.e6
+    AssetsArray[2,:] = (ProjArrays['PreTaxTotal']-ProjArraysTraditional['PreTaxTotal'])/1.e6
+    AssetsArray[3,:] = (ProjArrays['PreTax457bTotal']-ProjArraysTraditional['PreTax457bTotal'])/1.e6
+    AssetsArray[4,:] = (ProjArrays['RothTotal']-ProjArraysTraditional['RothTotal'])/1.e6
+    AssetsArray[5,:] = (ProjArrays['CashCushion']-ProjArraysTraditional['CashCushion'])/1.e6
+    # AssetsArray[6,:] = (ProjArrays['CapGainsTotal']-ProjArraysTraditional['CapGainsTotal'])/1.e6
 
-    PlotLabelArray = ['Total, Final $'+'{:.3f}M'.format((ProjArraysTraditional['TotalAssets'][-1]-
-                                                         ProjArrays['TotalAssets'][-1])/1.e6),'PostTaxTotal','PreTax',
-                      'PreTax457b','Roth','CashCushion']#,'CapGains']
+    PlotLabelArray = ['Total, Final $'+'{:.3f}M'.format((ProjArrays['TotalAssets'][-1]-
+                                                         ProjArraysTraditional['TotalAssets'][-1])/1.e6),'PostTaxTotal',
+                      'PreTax','PreTax457b','Roth','CashCushion']#,'CapGains']
     PlotColorArray = ['k','r','b','g','c','m'] #,'limegreen']
 
     # Initialize plot dict using default dict
@@ -361,9 +368,9 @@ if TPMorTraditionalWithdrawal == 'Both' and AssetBalancesVsAgeTPMvsTraditionalDi
          'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
          'ylabel': 'Asset Balance Difference [2022 $M]',
          'xlabel': 'Age',
-         'TitleText': 'Asset Diffs (Traditional - TPM), Annual ROI 7%',
+         'TitleText': 'Asset Diffs (TPM - Traditional), Annual ROI 7%',
          'Title_xoffset': 0.44, # shift a bit to the left (0.5 is default)
-         'LegendLoc': 'lower left', #'upper right',
+         'LegendLoc': 'lower left', #'upper right', #
          'SaveFile': OutDir+'AssetBalancesVsAgeDiffsTPMvsTraditional.png'}
     # Update dict to have plot specific values
     PlotDict.update(UpdateDict)
@@ -377,20 +384,22 @@ if TPMorTraditionalWithdrawal == 'Both' and AssetBalancesVsAgeTPMvsTraditionalDi
 if TPMorTraditionalWithdrawal == 'Both' and YearlyValuesVsAgeTPMvsTraditionalDiff:
 
     # TotalIncome, Expenses, Taxes, Penalties # TotalCash, SpecifiedIncome, TotalStandardIncome, TotalLTcapGainsIncome, TotalSSincome,
-    NumPlots = 3 #8 #9
+    NumPlots = 4 #8 #9
     ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
-    # ValuesArray[0,:] = (ProjArraysTraditional['SpecifiedIncome']-ProjArrays['SpecifiedIncome'])/1000.
-    # ValuesArray[1,:] = (ProjArraysTraditional['TotalStandardIncome']-ProjArrays['TotalStandardIncome'])/1000.
-    # ValuesArray[2,:] = (ProjArraysTraditional['TotalLTcapGainsIncome']-ProjArrays['TotalLTcapGainsIncome'])/1000.
-    # ValuesArray[3,:] = (ProjArraysTraditional['TotalSSincome']-ProjArrays['TotalSSincome'])/1000.
-    ValuesArray[0,:] = (ProjArraysTraditional['TotalIncome']-ProjArrays['TotalIncome'])/1000.
-    # ValuesArray[1,:] = (ProjArraysTraditional['Expenses']-ProjArrays['Expenses'])/1000.
-    ValuesArray[1,:] = (ProjArraysTraditional['Taxes']-ProjArrays['Taxes'])/1000.
-    ValuesArray[2,:] = (ProjArraysTraditional['Penalties']-ProjArrays['Penalties'])/1000.
-    # ValuesArray[5,:] = (ProjArraysTraditional['TotalCash']-ProjArrays['TotalCash'])/1000.
+    # ValuesArray[0,:] = (ProjArrays['SpecifiedIncome']-ProjArraysTraditional['SpecifiedIncome'])/1000.
+    # ValuesArray[1,:] = (ProjArrays['TotalStandardIncome']-ProjArraysTraditional['TotalStandardIncome'])/1000.
+    # ValuesArray[2,:] = (ProjArrays['TotalLTcapGainsIncome']-ProjArraysTraditional['TotalLTcapGainsIncome'])/1000.
+    # ValuesArray[3,:] = (ProjArrays['TotalSSincome']-ProjArraysTraditional['TotalSSincome'])/1000.
+    ValuesArray[0,:] = (ProjArrays['TotalIncome']-ProjArraysTraditional['TotalIncome'])/1000.
+    # ValuesArray[1,:] = (ProjArrays['Expenses']-ProjArraysTraditional['Expenses'])/1000.
+    ValuesArray[1,:] = (ProjArrays['Taxes']-ProjArraysTraditional['Taxes'])/1000.
+    ValuesArray[2,:] = (ProjArrays['Penalties']-ProjArraysTraditional['Penalties'])/1000.
+    # ValuesArray[5,:] = (ProjArrays['TotalCash']-ProjArraysTraditional['TotalCash'])/1000.
+    ValuesArray[3,:] = (ProjArrays['RMDtotal']-ProjArraysTraditional['RMDtotal'])/1000.
 
-    PlotLabelArray = ['TotalIncome','Taxes','Penalties'] #'TotalCash', 'SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','Expenses',
-    PlotColorArray = ['c','limegreen','fuchsia'] #'m', 'k','r','b','g','y',
+
+    PlotLabelArray = ['TotalIncome','Taxes','Penalties','RMDs'] #'TotalCash', 'SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','Expenses',
+    PlotColorArray = ['c','limegreen','fuchsia','saddlebrown'] #'m', 'k','r','b','g','y',
 
     # Initialize plot dict using default dict
     PlotDict = copy.deepcopy(DefaultPlotDict)
@@ -402,11 +411,11 @@ if TPMorTraditionalWithdrawal == 'Both' and YearlyValuesVsAgeTPMvsTraditionalDif
          'PlotColorArray': PlotColorArray,
          'PlotLabelArray': PlotLabelArray,
          'SemilogyFlag': False,
-         'ymin': 0, 'ymax': np.max(ValuesArray)+1.,
+         'ymin': np.min(ValuesArray)-1., 'ymax': np.max(ValuesArray)+1.,
          'xmin': ProjArrays['Age'][0,0], 'xmax': ProjArrays['Age'][-1,0],
          'ylabel': 'Yearly Value Diffs [2022 $K]',
          'xlabel': 'Age',
-         'TitleText': 'Yearly Values Diffs (Traditional - TPM) vs Age',
+         'TitleText': 'Yearly Values Diffs (TPM - Traditional) vs Age',
          'Title_xoffset': 0.44, # shift a bit to the left (0.5 is default)
          'LegendLoc': 'upper right',
          'SaveFile': OutDir+'YearlyValueDiffsVsAgeTPMvsTraditional.png'}
