@@ -365,6 +365,7 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
                   'Expenses': Expenses,
                   'SpecifiedIncome': SpecifiedIncome,
                   'Taxes': Taxes,
-                  'Penalties': Penalties}
+                  'Penalties': Penalties,
+                  'RMDtotal': RMDtotal}
 
     return ProjArrays
