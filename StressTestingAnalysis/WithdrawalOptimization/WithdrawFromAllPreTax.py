@@ -19,12 +19,14 @@ def WithdrawFromAllPreTax(PreTax,PreTax457b,Income,TotalCash,Roth, Age,YearCt):
         for ct in range(np.shape(PreTax457b['Bal'])[1]):
             WithdrawFrom457b(Income,PreTax457b,TotalCash, YearCt,ct)
         PreTax457b['Total'][YearCt] = np.sum(PreTax457b['Bal'][YearCt,:])
+        PreTax457b['TotalWithdrawn'][YearCt] = np.sum(PreTax457b['Withdrawn'][YearCt,:])
 
     # withdraw PreTax if room, rollover to Roth if not 60 yet
     # loop over all PreTax accounts (one or two in general)
     for ct in range(np.shape(PreTax['Bal'])[1]):
         WithdrawFromPreTax(Income,PreTax,TotalCash,Roth, Age,YearCt,ct)
     PreTax['Total'][YearCt] = np.sum(PreTax['Bal'][YearCt,:])
+    PreTax['TotalWithdrawn'][YearCt] = np.sum(PreTax['Withdrawn'][YearCt,:])
     Roth['Total'][YearCt] = np.sum(Roth['Bal'][YearCt,:])
 
     if PreTax457b['TPMwithdraw457bFirst'] == False:
@@ -33,3 +35,4 @@ def WithdrawFromAllPreTax(PreTax,PreTax457b,Income,TotalCash,Roth, Age,YearCt):
         for ct in range(np.shape(PreTax457b['Bal'])[1]):
             WithdrawFrom457b(Income,PreTax457b,TotalCash, YearCt,ct)
         PreTax457b['Total'][YearCt] = np.sum(PreTax457b['Bal'][YearCt,:])
+        PreTax457b['TotalWithdrawn'][YearCt] = np.sum(PreTax457b['Withdrawn'][YearCt,:])

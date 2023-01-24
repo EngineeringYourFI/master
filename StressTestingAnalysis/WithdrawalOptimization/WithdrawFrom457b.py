@@ -9,6 +9,7 @@ def WithdrawFrom457b(Income,PreTax457b,TotalCash, YearCt,PersonCt):
 
     # Unpack needed dictionary items - for easier access
     Bal = PreTax457b['Bal'][YearCt,PersonCt]
+    Withdrawn = PreTax457b['Withdrawn'][YearCt,PersonCt] # should always be zero, I believe, but just in case
     IncTotStd = Income['TotalStandard'][YearCt]
     IncTot = Income['Total'][YearCt]
     IncMaxStd = Income['MaxStandard'][YearCt]
@@ -19,10 +20,12 @@ def WithdrawFrom457b(Income,PreTax457b,TotalCash, YearCt,PersonCt):
         # if enough funds in 457b to cover the entire remainder
         if Bal >= RemainingStandardIncomeRoom:
             Bal -= RemainingStandardIncomeRoom
+            Withdrawn += RemainingStandardIncomeRoom
             TotalCash[YearCt] += RemainingStandardIncomeRoom
             IncTotStd += RemainingStandardIncomeRoom
             IncTot += RemainingStandardIncomeRoom
         else: # withdraw remaining balance
+            Withdrawn += Bal
             TotalCash[YearCt] += Bal
             IncTotStd += Bal
             IncTot += Bal
@@ -30,5 +33,6 @@ def WithdrawFrom457b(Income,PreTax457b,TotalCash, YearCt,PersonCt):
 
     # Repack any modified immutable dictionary items (mutable items such as arrays will already be modified)
     PreTax457b['Bal'][YearCt,PersonCt] = Bal
+    PreTax457b['Withdrawn'][YearCt,PersonCt] = Withdrawn
     Income['TotalStandard'][YearCt] = IncTotStd
     Income['Total'][YearCt] = IncTot

@@ -79,6 +79,9 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
 
     OutOfMoneyAge = np.nan
 
+    # ROI for post-tax remove dividend yield, since input ROI assumes reinvested dividends
+    ROInoDividends = R - (IncDict['QualifiedDividendYield'] + IncDict['NonQualifiedDividendYield'])
+
     # Fill out Age array, in case money runs out - don't want Ages equal zero after that, for plot
     for ct1 in range(0,NumYearsToProject):
         if ct1 > 0:
@@ -99,9 +102,9 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
             # loop over post-tax lots
             for ct2 in range(np.shape(PostTax)[1]):
                 # Compute gains, add to capital gains array
-                PostTaxCG[ct1,ct2] = PostTaxCG[ct1-1,ct2] + np.round(PostTax[ct1-1,ct2]*R,2)
+                PostTaxCG[ct1,ct2] = PostTaxCG[ct1-1,ct2] + np.round(PostTax[ct1-1,ct2]*ROInoDividends,2)
                 # then add to PostTax array
-                PostTax[ct1,ct2] = np.round(PostTax[ct1-1,ct2]*(1+R),2)
+                PostTax[ct1,ct2] = np.round(PostTax[ct1-1,ct2]*(1+ROInoDividends),2)
 
             TaxesGenPrevYear[ct1] = Taxes[ct1-1]
             PenaltiesGenPrevYear[ct1] = Penalties[ct1-1]
@@ -109,7 +112,7 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
             PenaltiesPaidPrevYear[ct1] = EstimatedPenaltiesPaidThisYear[ct1-1]
 
         # Compute expenses for current year
-        Expenses[ct1] = ExpDict['Exp']
+        Expenses[ct1] = ExpDict['Exp'] + ExpDict['ExpRate']*float(ct1)
         for ct2 in range(len(ExpDict['FutureExpenseAdjustments'])):
             if Age[ct1,0] >= ExpDict['FutureExpenseAdjustmentsAge'][ct2]:
                 Expenses[ct1] += ExpDict['FutureExpenseAdjustments'][ct2]

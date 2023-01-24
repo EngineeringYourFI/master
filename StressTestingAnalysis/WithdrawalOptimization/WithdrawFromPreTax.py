@@ -11,6 +11,7 @@ def WithdrawFromPreTax(Income,PreTax,TotalCash,Roth, Age,YearCt,PersonCt):
 
     # Unpack needed dictionary items - for easier access
     PreTaxBal = PreTax['Bal'][YearCt,PersonCt]
+    Withdrawn = PreTax['Withdrawn'][YearCt,PersonCt] # should always be zero, I believe, but just in case
     IncTotStd = Income['TotalStandard'][YearCt]
     IncTot = Income['Total'][YearCt]
     IncMaxStd = Income['MaxStandard'][YearCt]
@@ -34,6 +35,7 @@ def WithdrawFromPreTax(Income,PreTax,TotalCash,Roth, Age,YearCt,PersonCt):
             else: # use the cash - no penalties
                 TotalCash[YearCt] += RemainingStandardIncomeRoom
 
+            Withdrawn += RemainingStandardIncomeRoom
             IncTotStd += RemainingStandardIncomeRoom
             IncTot += RemainingStandardIncomeRoom
         else: # withdraw remaining balance
@@ -46,12 +48,14 @@ def WithdrawFromPreTax(Income,PreTax,TotalCash,Roth, Age,YearCt,PersonCt):
             else: # use the cash - no penalties
                 TotalCash[YearCt] += PreTaxBal
 
+            Withdrawn += PreTaxBal
             IncTotStd += PreTaxBal
             IncTot += PreTaxBal
             PreTaxBal = 0.
 
     # Repack any modified immutable dictionary items (mutable items such as arrays will already be modified)
     PreTax['Bal'][YearCt,PersonCt] = PreTaxBal
+    PreTax['Withdrawn'][YearCt,PersonCt] = Withdrawn
     Income['TotalStandard'][YearCt] = IncTotStd
     Income['Total'][YearCt] = IncTot
     Roth['Bal'][YearCt,PersonCt] = RothBal

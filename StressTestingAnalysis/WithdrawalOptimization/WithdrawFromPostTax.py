@@ -52,7 +52,7 @@ def WithdrawFromPostTax(PostTax,TotalCash,Income, TotalCashNeeded,IVdict,YearCt)
 
     # Loop over non-zero lots
     for ct in range(len(CGpercentOrder)):
-        # if total income specified has not been achieved and this lot (PostTax[ct1,ct2]) is non-zero
+        # if total income specified has not been achieved and this lot is non-zero
         # (subtracting 0.1 in case rounding below causes TotalIncome to just barely not get to SpecifiedIncome
         if (IncTot < (IncMaxTot-0.1)) and (PostTaxBal[CGpercentOrder[ct]] > 0.):
             # if cap gains from this lot + TotalIncome > SpecifiedIncome, sell fraction of lot
@@ -77,6 +77,10 @@ def WithdrawFromPostTax(PostTax,TotalCash,Income, TotalCashNeeded,IVdict,YearCt)
             IncTotLTcapGains += CapGainGenerated
             IncTot += CapGainGenerated
             PostTaxCG[CGpercentOrder[ct]] -= CapGainGenerated
+
+    # Compute totals
+    PostTax['Total'][YearCt] = np.sum(PostTax['Bal'][YearCt,:])
+    PostTax['CGtotal'][YearCt] = np.sum(PostTax['CG'][YearCt,:])
 
     # Repack any modified immutable dictionary items (mutable items such as arrays will already be modified)
     Income['Total'][YearCt] = IncTot

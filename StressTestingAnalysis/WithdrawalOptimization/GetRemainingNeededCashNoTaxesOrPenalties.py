@@ -24,9 +24,8 @@ def GetRemainingNeededCashNoTaxesOrPenalties(TotalCash,Roth,CashCushion, TotalCa
             WithdrawFromRoth(Roth,TotalCash, TotalCashNeeded,Age,YearCt,ct)
         RothTotal = np.sum(RothBal) # RothBal connected to Roth['Bal'][YearCt,:], modified in WithdrawFromRoth
 
-    # if TotalCash less than TotalCashNeeded, next need to pull from Roth
+    # if TotalCash less than TotalCashNeeded, next need to pull from Cash Cushion
     if TotalCash[YearCt] < TotalCashNeeded:
-        # RemainingCashNeeded = TotalCashNeeded - CashMinusTaxes
         RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
         # if cash cushion covers expenses:
         if CashCushion[YearCt] > RemainingCashNeeded:

@@ -6,6 +6,8 @@
 # ProjFinalBalance.py
 
 import numpy as np
+import sys
+import copy
 
 from WithdrawalOptimization.ComputeTaxes import ComputeTaxes
 from WithdrawalOptimization.TaxableSSconsolidated import TaxableSSconsolidated
@@ -15,6 +17,7 @@ from WithdrawalOptimization.WithdrawFromAllPreTax import WithdrawFromAllPreTax
 from WithdrawalOptimization.WithdrawFromPostTax import WithdrawFromPostTax
 from WithdrawalOptimization.GetRemainingNeededCashNoTaxesOrPenalties import GetRemainingNeededCashNoTaxesOrPenalties
 from WithdrawalOptimization.GetRemainingNeededCashWithTaxesAndOrPenalties import GetRemainingNeededCashWithTaxesAndOrPenalties
+from WithdrawalOptimization.TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc import *
 
 # Expand width of output in console
 import pandas as pd
@@ -31,9 +34,13 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
 
     # Initialize asset values
     PreTax = {'Bal': np.zeros((NumYearsToProject,NumPeople)),
-              'Total': np.zeros(NumYearsToProject)}
+              'Total': np.zeros(NumYearsToProject),
+              'Withdrawn': np.zeros((NumYearsToProject,NumPeople)),
+              'TotalWithdrawn': np.zeros(NumYearsToProject)}
     PreTax457b = {'Bal': np.zeros((NumYearsToProject,NumPeople)),
                   'Total': np.zeros(NumYearsToProject),
+                  'Withdrawn': np.zeros((NumYearsToProject,NumPeople)),
+                  'TotalWithdrawn': np.zeros(NumYearsToProject),
                   'TPMwithdraw457bFirst': TPMwithdraw457bFirst}
     PostTax = {'Bal': np.zeros((NumYearsToProject,np.size(IVdict['PostTaxIV']))),
                'Total': np.zeros(NumYearsToProject),
@@ -87,6 +94,9 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
 
     OutOfMoneyAge = np.nan
 
+    # ROI for post-tax remove dividend yield, since input ROI assumes reinvested dividends
+    ROInoDividends = R - (IncDict['QualifiedDividendYield'] + IncDict['NonQualifiedDividendYield'])
+
     # Fill out Age array, in case money runs out - don't want Ages equal zero after that, for plot
     for ct1 in range(0,NumYearsToProject):
         if ct1 > 0:
@@ -108,9 +118,9 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
             # loop over post-tax lots
             for ct2 in range(np.shape(PostTax['Bal'])[1]):
                 # Compute gains, add to capital gains array
-                PostTax['CG'][ct1,ct2] = PostTax['CG'][ct1-1,ct2] + np.round(PostTax['Bal'][ct1-1,ct2]*R,2)
+                PostTax['CG'][ct1,ct2] = PostTax['CG'][ct1-1,ct2] + np.round(PostTax['Bal'][ct1-1,ct2]*ROInoDividends,2)
                 # then add to PostTax array
-                PostTax['Bal'][ct1,ct2] = np.round(PostTax['Bal'][ct1-1,ct2]*(1+R),2)
+                PostTax['Bal'][ct1,ct2] = np.round(PostTax['Bal'][ct1-1,ct2]*(1+ROInoDividends),2)
 
             TaxesGenPrevYear[ct1] = Taxes[ct1-1]
             PenaltiesGenPrevYear[ct1] = Penalties[ct1-1]
@@ -118,7 +128,7 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
             PenaltiesPaidPrevYear[ct1] = EstimatedPenaltiesPaidThisYear[ct1-1]
 
         # Compute expenses for current year
-        Expenses[ct1] = ExpDict['Exp']
+        Expenses[ct1] = ExpDict['Exp'] + ExpDict['ExpRate']*float(ct1)
         for ct2 in range(len(ExpDict['FutureExpenseAdjustments'])):
             if Age[ct1,0] >= ExpDict['FutureExpenseAdjustmentsAge'][ct2]:
                 Expenses[ct1] += ExpDict['FutureExpenseAdjustments'][ct2]
@@ -221,6 +231,13 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
         if TotalCash[ct1] < TotalCashNeeded:
             # Get cash with no taxes or penalties to meet TotalCashNeeded, if needed
             GetRemainingNeededCashNoTaxesOrPenalties(TotalCash,Roth,CashCushion, TotalCashNeeded,Age,ct1)
+
+        if IncDict['TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag']:
+            if TotalCash[ct1] < TotalCashNeeded:
+                # Try reducing standard income & increasing LT cap gains by same amount to get more cash, if possible
+                TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc(TotalCash,PreTax,PreTax457b,PostTax,Roth,Income,
+                                                                     Taxes, Age,TotalCashNeeded,ct1,TaxRateInfo,
+                                                                     FilingStatus)
 
         if TotalCash[ct1] < TotalCashNeeded:
             # If unable to obtain enough cash without additional taxes or penalties, proceed with sources that WILL
