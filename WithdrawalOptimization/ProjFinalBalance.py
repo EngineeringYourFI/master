@@ -7,14 +7,17 @@
 
 import numpy as np
 import sys
+import copy
 
-from SupportMethods import ComputeTaxes
+from ComputeTaxes import ComputeTaxes
 from TaxableSSconsolidated import TaxableSSconsolidated
 from TaxableIncomeTargetMethodWithSSI import TaxableIncomeTargetMethodWithSSI
-from WithdrawFrom457b import WithdrawFrom457b
-from WithdrawFromPreTax import WithdrawFromPreTax
-from WithdrawFromRoth import WithdrawFromRoth
-from ComputeRMD import ComputeRMD
+from NonAdjustableIncome import NonAdjustableIncome
+from WithdrawFromAllPreTax import WithdrawFromAllPreTax
+from WithdrawFromPostTax import WithdrawFromPostTax
+from GetRemainingNeededCashNoTaxesOrPenalties import GetRemainingNeededCashNoTaxesOrPenalties
+from GetRemainingNeededCashWithTaxesAndOrPenalties import GetRemainingNeededCashWithTaxesAndOrPenalties
+from TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc import *
 
 # Expand width of output in console
 import pandas as pd
@@ -30,387 +33,275 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
     NumPeople = np.size(IVdict['PreTaxIV'])
 
     # Initialize asset values
-    PreTax = np.zeros((NumYearsToProject,NumPeople))
-    PreTax457b = np.zeros((NumYearsToProject,NumPeople))
-    PostTax = np.zeros((NumYearsToProject,np.size(IVdict['PostTaxIV'])))
-    PostTaxCG = np.zeros((NumYearsToProject,np.size(IVdict['PostTaxIV'])))
-    Roth = np.zeros((NumYearsToProject,NumPeople))
-    RothContributions = np.zeros((NumYearsToProject,NumPeople))
-
-    RothRolloverAmount = np.array([], dtype=float) # The rollover amount
-    RothRolloverAge = np.array([], dtype=float) # the age of the person's account the rollover is done on
-    RothRolloverPerson = np.array([], dtype=int) # the person who does the rollover (0 = 1st person, 1 = 2nd person)
+    PreTax = {'Bal': np.zeros((NumYearsToProject,NumPeople)),
+              'Total': np.zeros(NumYearsToProject),
+              'Withdrawn': np.zeros((NumYearsToProject,NumPeople)),
+              'TotalWithdrawn': np.zeros(NumYearsToProject)}
+    PreTax457b = {'Bal': np.zeros((NumYearsToProject,NumPeople)),
+                  'Total': np.zeros(NumYearsToProject),
+                  'Withdrawn': np.zeros((NumYearsToProject,NumPeople)),
+                  'TotalWithdrawn': np.zeros(NumYearsToProject),
+                  'TPMwithdraw457bFirst': TPMwithdraw457bFirst}
+    PostTax = {'Bal': np.zeros((NumYearsToProject,np.size(IVdict['PostTaxIV']))),
+               'Total': np.zeros(NumYearsToProject),
+               'CG': np.zeros((NumYearsToProject,np.size(IVdict['PostTaxIV']))),
+               'CGtotal': np.zeros(NumYearsToProject)}
+    Roth = {'Bal': np.zeros((NumYearsToProject,NumPeople)),
+            'Total': np.zeros(NumYearsToProject),
+            'Contributions': np.zeros((NumYearsToProject,NumPeople)),
+            'RolloverAmount': np.array([], dtype=float),
+            'RolloverAge': np.array([], dtype=float), # the age of the person's account the rollover is done on
+            'RolloverPerson': np.array([], dtype=int)} # person who does the rollover (0 = 1st person, 1 = 2nd person)
     CashCushion = np.zeros(NumYearsToProject)
-    PreTaxTotal = np.zeros(NumYearsToProject)
-    PreTax457bTotal = np.zeros(NumYearsToProject)
-    PostTaxTotal = np.zeros(NumYearsToProject)
-    CapGainsTotal = np.zeros(NumYearsToProject)
-    RothTotal = np.zeros(NumYearsToProject)
     TotalAssets = np.zeros(NumYearsToProject)
 
-    PreTax[0,:] = IVdict['PreTaxIV']
-    PreTax457b[0,:] = IVdict['PreTax457bIV']
-    PostTax[0,:] = IVdict['PostTaxIV']
-    PostTaxCG[0,:] = IVdict['CurrentUnrealizedCapGains']
-    Roth[0,:] = IVdict['RothIV']
-    RothContributions[0,:] = IVdict['RothContributions']
+    PreTax['Bal'][0,:] = IVdict['PreTaxIV']
+    PreTax457b['Bal'][0,:] = IVdict['PreTax457bIV']
+    PostTax['Bal'][0,:] = IVdict['PostTaxIV']
+    PostTax['CG'][0,:] = IVdict['CurrentUnrealizedCapGains']
+    Roth['Bal'][0,:] = IVdict['RothIV']
+    Roth['Contributions'][0,:] = IVdict['RothContributions']
     CashCushion[0] = IVdict['CashCushion']
 
     # Initialize Yearly values
+
+    Income = {'Total': np.zeros(NumYearsToProject),
+              'TotalStandard': np.zeros(NumYearsToProject),
+              'TotalLTcapGains': np.zeros(NumYearsToProject),
+              'TotalSS': np.zeros(NumYearsToProject),
+              'TaxableSS': np.zeros(NumYearsToProject),
+              'MaxStandard': np.zeros(NumYearsToProject),
+              'MaxTotal': np.zeros(NumYearsToProject)} # previously called SpecifiedIncome
+    RMD = {'Bal': np.zeros((NumYearsToProject,np.size(CurrentAge))),
+           'Total': np.zeros(NumYearsToProject)}
     Age = np.zeros((NumYearsToProject,np.size(CurrentAge)))
     Age[0,:] = CurrentAge
-    RMD = np.zeros((NumYearsToProject,np.size(CurrentAge)))
     TotalCash = np.zeros(NumYearsToProject)
-    TotalStandardIncome = np.zeros(NumYearsToProject)
-    TotalLTcapGainsIncome = np.zeros(NumYearsToProject)
-    TotalSSincome = np.zeros(NumYearsToProject)
-    TotalIncome = np.zeros(NumYearsToProject)
     Expenses = np.zeros(NumYearsToProject)
-    MaxStandardIncome = np.zeros(NumYearsToProject)
-    SpecifiedIncome = np.zeros(NumYearsToProject)
     Taxes = np.zeros(NumYearsToProject)
+    TaxesGenPrevYear = np.zeros(NumYearsToProject)
+    TaxesPaidPrevYear = np.zeros(NumYearsToProject)
+    EstimatedTaxesPaidThisYear = np.zeros(NumYearsToProject)
     Penalties = np.zeros(NumYearsToProject)
-    RMDtotal = np.zeros(NumYearsToProject)
+    PenaltiesGenPrevYear = np.zeros(NumYearsToProject)
+    PenaltiesPaidPrevYear = np.zeros(NumYearsToProject)
+    EstimatedPenaltiesPaidThisYear = np.zeros(NumYearsToProject)
+
+    TaxesGenPrevYear[0] = IVdict['TaxesGenPrevYear']
+    TaxesPaidPrevYear[0] = IVdict['TaxesPaidPrevYear']
+    PenaltiesGenPrevYear[0] = IVdict['PenaltiesGenPrevYear']
+    PenaltiesPaidPrevYear[0] = IVdict['PenaltiesPaidPrevYear']
+
+    OutOfMoneyAge = np.nan
+
+    # ROI for post-tax remove dividend yield, since input ROI assumes reinvested dividends
+    ROInoDividends = R - (IncDict['QualifiedDividendYield'] + IncDict['NonQualifiedDividendYield'])
+
+    # Fill out Age array, in case money runs out - don't want Ages equal zero after that, for plot
+    for ct1 in range(0,NumYearsToProject):
+        if ct1 > 0:
+            Age[ct1,:] = Age[ct1-1,:] + 1
 
     # loop over years
     for ct1 in range(0,NumYearsToProject):
 
+        print('Year Count = ',ct1)
+
         # apply investment growth to accounts if not at first year
         if ct1 > 0:
-            Age[ct1,:] = Age[ct1-1,:] + 1
 
             # tax advantaged accounts
-            for ct2 in range(np.shape(PreTax)[1]):
-                PreTax[ct1,ct2] = np.round(PreTax[ct1-1,ct2]*(1+R),2)
-                PreTax457b[ct1,ct2] = np.round(PreTax457b[ct1-1,ct2]*(1+R),2)
-                Roth[ct1,ct2] = np.round(Roth[ct1-1,ct2]*(1+R),2)
-            RothContributions[ct1,:] = RothContributions[ct1-1,:]
+            for ct2 in range(np.shape(PreTax['Bal'])[1]):
+                PreTax['Bal'][ct1,ct2] = np.round(PreTax['Bal'][ct1-1,ct2]*(1+R),2)
+                PreTax457b['Bal'][ct1,ct2] = np.round(PreTax457b['Bal'][ct1-1,ct2]*(1+R),2)
+                Roth['Bal'][ct1,ct2] = np.round(Roth['Bal'][ct1-1,ct2]*(1+R),2)
+            Roth['Contributions'][ct1,:] = Roth['Contributions'][ct1-1,:]
             CashCushion[ct1] = CashCushion[ct1-1]
             # loop over post-tax lots
-            for ct2 in range(np.shape(PostTax)[1]):
+            for ct2 in range(np.shape(PostTax['Bal'])[1]):
                 # Compute gains, add to capital gains array
-                PostTaxCG[ct1,ct2] = PostTaxCG[ct1-1,ct2] + np.round(PostTax[ct1-1,ct2]*R,2)
+                PostTax['CG'][ct1,ct2] = PostTax['CG'][ct1-1,ct2] + np.round(PostTax['Bal'][ct1-1,ct2]*ROInoDividends,2)
                 # then add to PostTax array
-                PostTax[ct1,ct2] = np.round(PostTax[ct1-1,ct2]*(1+R),2)
+                PostTax['Bal'][ct1,ct2] = np.round(PostTax['Bal'][ct1-1,ct2]*(1+ROInoDividends),2)
+
+            TaxesGenPrevYear[ct1] = Taxes[ct1-1]
+            PenaltiesGenPrevYear[ct1] = Penalties[ct1-1]
+            TaxesPaidPrevYear[ct1] = EstimatedTaxesPaidThisYear[ct1-1]
+            PenaltiesPaidPrevYear[ct1] = EstimatedPenaltiesPaidThisYear[ct1-1]
 
         # Compute expenses for current year
-        Expenses[ct1] = ExpDict['Exp']
+        Expenses[ct1] = ExpDict['Exp'] + ExpDict['ExpRate']*float(ct1)
         for ct2 in range(len(ExpDict['FutureExpenseAdjustments'])):
             if Age[ct1,0] >= ExpDict['FutureExpenseAdjustmentsAge'][ct2]:
                 Expenses[ct1] += ExpDict['FutureExpenseAdjustments'][ct2]
 
+        # Taxes/Penalties
+
+        # If taxes paid last year exceed what was owed, collect that refund
+        if (TaxesPaidPrevYear[ct1] - TaxesGenPrevYear[ct1]) > 0.: # collect refund, place into new PostTax lot
+            NewLot = np.zeros((np.shape(PostTax['Bal'])[0],1))
+            NewLot[ct1,0] = TaxesPaidPrevYear[ct1] - TaxesGenPrevYear[ct1]
+            PostTax['Bal'] = np.append(PostTax['Bal'],NewLot,1)
+            PostTax['CG'] = np.append(PostTax['CG'],np.zeros((np.shape(PostTax['CG'])[0],1)),1)
+            TaxesStillOwed = 0.
+        else: # otherwise need to pay the amount owed this year
+            TaxesStillOwed = TaxesGenPrevYear[ct1] - TaxesPaidPrevYear[ct1]
+
+        # If penalties paid last year exceed what was owed, collect that refund
+        if (PenaltiesPaidPrevYear[ct1] - PenaltiesGenPrevYear[ct1]) > 0.: # collect refund, place into new PostTax lot
+            NewLot = np.zeros((np.shape(PostTax['Bal'])[0],1))
+            NewLot[ct1,0] = PenaltiesPaidPrevYear[ct1] - PenaltiesGenPrevYear[ct1]
+            PostTax['Bal'] = np.append(PostTax['Bal'],NewLot,1)
+            PostTax['CG'] = np.append(PostTax['CG'],np.zeros((np.shape(PostTax['CG'])[0],1)),1)
+            PenaltiesStillOwed = 0.
+        else: # otherwise need to pay the amount owed this year
+            PenaltiesStillOwed = PenaltiesGenPrevYear[ct1] - PenaltiesPaidPrevYear[ct1]
+
+        # Taxes to pay this year, by default the amount you paid last year - assumes most years you'll pay about the
+        # same or more taxes as the previous year. If not, then need to estimate tax owed in the same year you make the
+        # withdrawal, to avoid overpaying taxes too early most years (which may unfortunately require expensive
+        # iteration).
+        EstimatedTaxesPaidThisYear[ct1] = TaxesGenPrevYear[ct1]
+        # Assuming that penalties do NOT work the same way as taxes: do not need to make estimated payments to the IRS
+        # of penalties incurred from early retirement withdrawals. But if I ever find out otherwise, can easily switch
+        # this back to using PenaltiesGenPrevYear[ct1].
+        EstimatedPenaltiesPaidThisYear[ct1] = 0. #PenaltiesGenPrevYear[ct1]
+
+        # Compute cash needed this year
+        TotalCashNeeded = Expenses[ct1] + TaxesStillOwed + PenaltiesStillOwed + EstimatedTaxesPaidThisYear[ct1] + \
+                          EstimatedPenaltiesPaidThisYear[ct1]
+
         # Income
 
         if np.all(Age[ct1,:] >= 65.):
-            SpecifiedIncome[ct1] = IncDict['SpecifiedIncomeAfterACA']
+            Income['MaxTotal'][ct1] = IncDict['SpecifiedIncomeAfterACA']
         else:
-            SpecifiedIncome[ct1] = IncDict['SpecifiedIncome']
+            Income['MaxTotal'][ct1] = IncDict['SpecifiedIncome']
 
-        MaxStandardIncome[ct1] = IncDict['MaxStandardIncome']
+        Income['MaxStandard'][ct1] = IncDict['MaxStandardIncome']
+        for ct2 in range(len(IncDict['MaxStandardIncomeChange'])):
+            if Age[ct1,0] >= IncDict['AgeMaxStandardIncomeChangeWillStart'][ct2]:
+                Income['MaxStandard'][ct1] += IncDict['MaxStandardIncomeChange'][ct2]
 
-        # Dividends
-        TotalCash[ct1] += IncDict['CurrentAnnualQualifiedDividends'] + IncDict['CurrentAnnualNonQualifiedDividends']
-        TotalStandardIncome[ct1] += IncDict['CurrentAnnualNonQualifiedDividends']
-        TotalLTcapGainsIncome[ct1] += IncDict['CurrentAnnualQualifiedDividends']
-        TotalIncome[ct1] += IncDict['CurrentAnnualQualifiedDividends'] + IncDict['CurrentAnnualNonQualifiedDividends']
+        # All "non-adjustable" income sources (i.e., we cannot modify the amounts, in the framework of this simulation),
+        # including dividends, "other income", RMDs, and social security
+        NonAdjustableIncome(TotalCash,Income,PreTax,PreTax457b,RMD, PostTax,IncDict,Age,ct1)
 
-        # Other income
-        for ct2 in range(len(IncDict['OtherIncomeSources'])):
-            if Age[ct1,0] >= IncDict['AgeOtherIncomeSourcesWillStart'][ct2]:
-                TotalCash[ct1] += IncDict['OtherIncomeSources'][ct2]
-                # assuming all "other income sources" are taxed as standard income (vs LT cap gains, social security, etc.)
-                TotalStandardIncome[ct1] += IncDict['OtherIncomeSources'][ct2]
-                TotalIncome[ct1] += IncDict['OtherIncomeSources'][ct2]
+        # Below are "adjustable" income/cash sources - i.e. we can modify these income/cash values each year of the
+        # simulation to achieve our goals.
 
-        # If after other income the TotalStandardIncome or TotalIncome exceeds the user set MaxStandardIncome or
-        # SpecifiedIncome, the user should reevaluate the MaxStandardIncome and/or SpecifiedIncome
-        if TotalStandardIncome[ct1] > MaxStandardIncome[ct1]:
-            print('TotalStandardIncome[ct1] > MaxStandardIncome[ct1]: Reassess MaxStandardIncome.')
-            sys.exit()
-        if TotalIncome[ct1] > SpecifiedIncome[ct1]:
-            print('TotalIncome[ct1] > SpecifiedIncome[ct1]: Reassess SpecifiedIncome.')
-            sys.exit()
+        # Goals:
+        # 1. Achieve exact specified total max income
+        #     a. If not possible, try to have total income not exceed specified total max income
+        # 2. Achieve standard income equal to max standard income (e.g. to maximize standard deduction if max standard
+        # income = standard deduction)
+        #     a. If not possible, try to have standard income not exceed max standard income
+        # 3. Generate enough cash to cover TotalCashNeeded: TotalCash >= TotalCashNeeded
+        # 4. Generate income and cash first from tax and penalty-free sources, then progress up from the lowest tax/
+        # penalty options to the highest (i.e. starting with the standard deduction for standard income and 0% LT cap
+        # gains bracket for LT cap gains, then up from lowest tax/penalty options to highest)
 
-        # Required Minimum Distributions (RMDs)
-        for ct2 in range(np.shape(PreTax)[1]):
-            if Age[ct1,ct2] >= 72.:
-                # PreTax
-                RMDpretax, WR = ComputeRMD(PreTax[ct1,ct2],Age[ct1,ct2])
-                # 457b
-                RMD457b, WR = ComputeRMD(PreTax457b[ct1,ct2],Age[ct1,ct2])
-                # Sum of all pretax accounts
-                RMD[ct1,ct2] = RMDpretax + RMD457b
-                # add to cash and income totals
-                TotalCash[ct1] += RMD[ct1,ct2]
-                TotalStandardIncome[ct1] += RMD[ct1,ct2]
-                TotalIncome[ct1] += RMD[ct1,ct2]
-                # remove from pretax accounts
-                PreTax[ct1,ct2] -= RMDpretax
-                PreTax457b[ct1,ct2] -= RMD457b
-
-        RMDtotal[ct1] = np.sum(RMD[ct1,:])
-
-        # Social security
-        # Must do after dividend and other income, because must account for the impact on standard income when computing
-        # the remaining standard income needed for particular taxable SS income, and perhaps amount of cap gain needed
-        # to ensure total standard income does not exceed MaxStandardIncome[ct1] (if possible)
-        TotalSS = 0.
-        for ct2 in range(len(IncDict['SocialSecurityPayments'])):
-            if Age[ct1,ct2] >= IncDict['AgeSSwillStart'][ct2]:
-                TotalSS += IncDict['SocialSecurityPayments'][ct2]
-
-        if TotalSS > 0.:
-
-            TotalCash[ct1] += TotalSS
+        if Income['TotalSS'][ct1] > 0.:
 
             # Run TaxableIncomeTargetMethodWithSSI
-            TaxableSSincome, MaxStandardIncome[ct1], SpecifiedIncome[ct1] = \
-                TaxableIncomeTargetMethodWithSSI(TotalStandardIncome[ct1], TotalLTcapGainsIncome[ct1], TotalSS,
-                                                 MaxStandardIncome[ct1], SpecifiedIncome[ct1], FilingStatus)
+            TaxableSSdesired, Income['MaxStandard'][ct1], Income['MaxTotal'][ct1] = \
+                TaxableIncomeTargetMethodWithSSI(Income['TotalStandard'][ct1],Income['TotalLTcapGains'][ct1],
+                                                 Income['TotalSS'][ct1],Income['MaxStandard'][ct1],
+                                                 Income['MaxTotal'][ct1], FilingStatus) #Income['TaxableSS'][ct1]
+            Income['TotalStandard'][ct1] += TaxableSSdesired
+            Income['Total'][ct1] += TaxableSSdesired
 
-            TotalSSincome[ct1] = TotalSS
-            TotalStandardIncome[ct1] += TaxableSSincome
-            TotalIncome[ct1] += TaxableSSincome
+        # Withdraw from PreTax accounts (PreTax and PreTax457b)
+        WithdrawFromAllPreTax(PreTax,PreTax457b,Income,TotalCash,Roth, Age,ct1)
 
-            # In case this ever happens:
-            if TotalStandardIncome[ct1] > MaxStandardIncome[ct1]:
-                print('TotalStandardIncome[ct1] > MaxStandardIncome[ct1]: Should not happen, figure out what to do in '
-                      'this situation (if ever encountered).')
-                sys.exit()
-            if np.round(TotalIncome[ct1],2) > np.round(SpecifiedIncome[ct1],2): #have to do round to avoid annoying numerical issue
-                print('TotalIncome[ct1] > SpecifiedIncome[ct1]: Should not happen, figure out what to do in '
-                      'this situation (if ever encountered).')
-                sys.exit()
+        # Withdraw from post-tax lots
+        WithdrawFromPostTax(PostTax,TotalCash,Income, TotalCashNeeded,IVdict,ct1)
 
-        # make withdrawals as needed to achieve specified income
-
-        if TPMwithdraw457bFirst:
-            # withdraw 457b if room
-            # loop over all 457b accounts (one or two)
-            for ct2 in range(np.shape(PreTax457b)[1]):
-                PreTax457b[ct1,ct2],TotalCash[ct1],TotalStandardIncome[ct1],TotalIncome[ct1] = \
-                    WithdrawFrom457b(MaxStandardIncome[ct1],TotalStandardIncome[ct1],PreTax457b[ct1,ct2],
-                                     TotalCash[ct1],TotalIncome[ct1])
-            PreTax457bTotal[ct1] = np.sum(PreTax457b[ct1,:])
-
-        # withdraw PreTax if room, rollover to Roth if not 60 yet
-        # loop over all PreTax accounts (one or two in general)
-        for ct2 in range(np.shape(PreTax)[1]):
-            PreTax[ct1,ct2],TotalCash[ct1],TotalStandardIncome[ct1],TotalIncome[ct1],Roth[ct1,ct2],RothRolloverAmount,\
-            RothRolloverAge,RothRolloverPerson = WithdrawFromPreTax(MaxStandardIncome[ct1],
-                                                                    TotalStandardIncome[ct1], PreTax[ct1,ct2],
-                                                                    TotalCash[ct1],TotalIncome[ct1],Age[ct1,ct2],
-                                                                    Roth[ct1,ct2], RothRolloverAmount, RothRolloverAge,
-                                                                    RothRolloverPerson, ct2)
-        PreTaxTotal[ct1] = np.sum(PreTax[ct1,:])
-        RothTotal[ct1] = np.sum(Roth[ct1,:])
-
-        if TPMwithdraw457bFirst == False:
-            # withdraw 457b if room
-            # loop over all 457b accounts (one or two in general)
-            for ct2 in range(np.shape(PreTax457b)[1]):
-                PreTax457b[ct1,ct2],TotalCash[ct1],TotalStandardIncome[ct1],TotalIncome[ct1] = \
-                    WithdrawFrom457b(MaxStandardIncome[ct1],TotalStandardIncome[ct1],PreTax457b[ct1,ct2],
-                                     TotalCash[ct1],TotalIncome[ct1])
-            PreTax457bTotal[ct1] = np.sum(PreTax457b[ct1,:])
-
-        # withdraw post-tax:
-
-        # First determine what percentage of lot is cap gains
-        # CapGainPercentage = PostTaxCG[ct1,:] / PostTax[ct1,:] - doesn't account for PostTax[ct1,ct2] = 0
-        CapGainPercentage = np.zeros(len(PostTax[ct1,:]))
-        for ct2 in range(len(CapGainPercentage)):
-            if PostTax[ct1,ct2] > 0.:
-                CapGainPercentage[ct2] = PostTaxCG[ct1,ct2] / PostTax[ct1,ct2]
-            else:
-                CapGainPercentage[ct2] = np.nan
-
-        if TotalCash[ct1] < Expenses[ct1]: # approximation, b/c taxes haven't been computed yet, but likely good enough
-            # set lots in order from lowest % cap gains to highest, to maximize the chance there will be sufficient
-            # cash for expenses
-            CGpercentOrder = np.argsort(CapGainPercentage)
-        else:
-            # set lots in order from highest % cap gains to highest, to minimize the excess cash generated, since
-            # already have enough
-            CGpercentOrder = np.argsort(CapGainPercentage)[::-1]
-
-        # if first year, remove any indices in CGpercentOrder that correspond to LotPurchasedFirstYear = True
-        if ct1 == 0:
-            LotIndicesToRemove = np.where(IVdict['LotPurchasedFirstYear'])[0]
-            # remove those indices
-            for ct2 in range(len(LotIndicesToRemove)):
-                CGpercentOrder = CGpercentOrder[CGpercentOrder != LotIndicesToRemove[ct2]]
-
-        # Then remove any indices in CGpercentOrder that correspond to CapGainPercentage = np.nan
-        LotIndicesToRemove = np.where(np.isnan(CapGainPercentage))[0]
-        # remove those indices
-        for ct2 in range(len(LotIndicesToRemove)):
-            CGpercentOrder = CGpercentOrder[CGpercentOrder != LotIndicesToRemove[ct2]]
-
-        # Loop over non-zero lots
-        for ct2 in range(len(CGpercentOrder)):
-            # if total income specified has not been achieved and this lot (PostTax[ct1,ct2]) is non-zero
-            # (subtracting 0.1 in case rounding below causes TotalIncome to just barely not get to SpecifiedIncome
-            if (TotalIncome[ct1] < (SpecifiedIncome[ct1]-0.1)) and (PostTax[ct1,CGpercentOrder[ct2]] > 0.):
-                # if cap gains from this lot + TotalIncome > SpecifiedIncome, sell fraction of lot
-                if (PostTaxCG[ct1,CGpercentOrder[ct2]] + TotalIncome[ct1]) > SpecifiedIncome[ct1]:
-                    # then compute % of cap gains needed to reach exactly SpecifiedIncome
-                    CapGainFraction = (SpecifiedIncome[ct1] - TotalIncome[ct1]) / PostTaxCG[ct1,CGpercentOrder[ct2]]
-                    # then sell that % of lot
-                    # determine how much cash that sell generates
-                    CashGenerated = np.round(PostTax[ct1,CGpercentOrder[ct2]] * CapGainFraction,2)
-                    # determine how much capital gains that sell generates
-                    CapGainGenerated = np.round(PostTaxCG[ct1,CGpercentOrder[ct2]] * CapGainFraction,2)
-
-                else: # sell entire lot
-                    CashGenerated = PostTax[ct1,CGpercentOrder[ct2]]
-                    CapGainGenerated = PostTaxCG[ct1,CGpercentOrder[ct2]]
-
-                # add CashGenerated to TotalCash, remove from PostTax balance
-                TotalCash[ct1] += CashGenerated
-                PostTax[ct1,CGpercentOrder[ct2]] -= CashGenerated
-
-                # add CapGainGenerated to TotalLTcapGainsIncome and TotalIncome, remove from PostTaxCG
-                TotalLTcapGainsIncome[ct1] += CapGainGenerated
-                TotalIncome[ct1] += CapGainGenerated
-                PostTaxCG[ct1,CGpercentOrder[ct2]] -= CapGainGenerated
-
-        # If SS income, check to see if TotalIncome[ct1] = SpecifiedIncome[ct1]
-        # If not, then it might not have been possible to achieve sufficient other standard income or capital gains,
-        # which means that the amount of taxable SS income may be different, so that needs to be adjusted
-        if TotalSS > 0.:
-            if TotalIncome[ct1] < (SpecifiedIncome[ct1]-0.1):
-                NonSSstandardIncome = TotalStandardIncome[ct1]-TaxableSSincome
-                # recompute TaxableSSincome
-                TaxableSSincome = TaxableSSconsolidated(NonSSstandardIncome+TotalLTcapGainsIncome[ct1],TotalSS,
-                                                        FilingStatus)
-                # recompute TotalStandardIncome[ct1]
-                TotalStandardIncome[ct1] = NonSSstandardIncome + TaxableSSincome
-                print('TaxableSSincome Adjusted because TotalIncome < SpecifiedIncome (investigate and make sure this '
-                      'is correct)')
-
-        # Taxes
+        # Compute TaxableSS, based on income from WithdrawFromAllPreTax and WithdrawFromPostTax
+        if Income['TotalSS'][ct1] > 0.:
+            NonSSstandardIncome = Income['TotalStandard'][ct1] - TaxableSSdesired
+            Income['TaxableSS'][ct1] = TaxableSSconsolidated(NonSSstandardIncome + Income['TotalLTcapGains'][ct1],
+                                                             Income['TotalSS'][ct1], FilingStatus)
+            if np.abs(Income['TaxableSS'][ct1] - TaxableSSdesired) >= 0.01:
+                Income['TotalStandard'][ct1] = NonSSstandardIncome + Income['TaxableSS'][ct1]
+                Income['Total'][ct1] = Income['TotalStandard'][ct1] + Income['TotalLTcapGains'][ct1]
 
         # Compute Taxes
-        Taxes[ct1] = ComputeTaxes(TaxRateInfo,FilingStatus,TotalStandardIncome[ct1],TotalLTcapGainsIncome[ct1])
+        TaxesDict = ComputeTaxes(TaxRateInfo,FilingStatus,Income['TotalStandard'][ct1],Income['TotalLTcapGains'][ct1])
+        Taxes[ct1] = TaxesDict['Total']
 
-        # subtract taxes from TotalCash
-        CashMinusTaxes = TotalCash[ct1] - Taxes[ct1]
+        if TotalCash[ct1] < TotalCashNeeded:
+            # Get cash with no taxes or penalties to meet TotalCashNeeded, if needed
+            GetRemainingNeededCashNoTaxesOrPenalties(TotalCash,Roth,CashCushion, TotalCashNeeded,Age,ct1)
 
-        # if CashMinusTaxes less than Expenses, next need to pull from Roth
-        if CashMinusTaxes < Expenses[ct1]:
-            # loop over people
-            for ct2 in range(np.shape(Roth)[1]):
-                Roth[ct1,ct2], TotalCash[ct1], RothContributions[ct1,ct2], RothRolloverAmount = \
-                    WithdrawFromRoth(Expenses[ct1],Age[ct1,ct2],Roth[ct1,ct2],TotalCash[ct1],
-                                     RothContributions[ct1,ct2],Taxes[ct1],RothRolloverAmount,RothRolloverAge,
-                                     RothRolloverPerson,ct2)
-            RothTotal[ct1] = np.sum(Roth[ct1,:])
-
-        # recompute CashMinusTaxes
-        CashMinusTaxes = TotalCash[ct1] - Taxes[ct1]
-
-        # if still not enough cash, next need to pull from CashCushion
-        if CashMinusTaxes < Expenses[ct1]:
-            RemainingCashNeeded = Expenses[ct1] - CashMinusTaxes
-            # if cash cushion covers expenses:
-            if CashCushion[ct1] > RemainingCashNeeded:
-                TotalCash[ct1] += RemainingCashNeeded
-                CashCushion[ct1] -= RemainingCashNeeded
-            else:
-                # then just withdraw remaining balance
-                TotalCash[ct1] += CashCushion[ct1]
-                CashCushion[ct1] = 0.
-
-        # recompute CashMinusTaxes
-        CashMinusTaxes = TotalCash[ct1] - Taxes[ct1]
-
-        # TODO: all steps below
-        # TODO: all steps below will require iteration to determine how much total withdrawal is needed to not only
-        #  generate the cash needed, but also to pay for the penalties/taxes generated by the withdrawal - see
-        #  ProjFinalBalanceTraditional.py
-        # TODO: also stop the iteration loop if completely out of money
-
-        # for all steps that involve selling taxable lots, sort the lots from lowest to highest percentage LT cap gain
-        # and sell them in that order to minimize taxes.
-
-        # Under 60, after pulling from cash account and still need more cash:
-        # Sell remaining taxable lots that have LT cap gain percentage less than 66%: less than 10% effective tax
-        # Pull from Roth growth or rollovers less than 5 years old: 10% penalty
-        # Pull from 457(b) in 10% tax bracket (could also do this before pulling from Roth growth, same effective tax/penalty rate of 10%)
-        # Sell remaining taxable lots that have LT cap gain percentage less than 80%: 10% to 12% effective tax
-        # Pull from 457(b) in 12% tax bracket
-        # Sell remaining taxable lots: 12% to 20% effective tax, given max 20% cap gains tax
-        # Pull from pre-tax in 10% tax bracket: 10% taxes + 10% penalty = 20% effective tax/penalty rate
-        # Pull from 457(b) in 22% tax bracket
-        # Pull from pre-tax in 12% tax bracket: 12% taxes + 10% penalty = 22% effective tax/penalty rate
-        # Pull from 457(b) in 24% tax bracket
-        # Pull from 457(b) in 32% tax bracket
-        # Pull from pre-tax in 22% tax bracket: 22% taxes + 10% penalty = 32% effective tax/penalty rate
-        # Pull from pre-tax in 24% tax bracket: 24% taxes + 10% penalty = 34% effective tax/penalty rate
-        # Pull from 457(b) in 35% tax bracket
-        # Pull from 457(b) in 37% tax bracket (all remaining funds)
-        # Pull from pre-tax in 32% tax bracket: 32% taxes + 10% penalty = 42% effective tax/penalty rate
-        # Pull from pre-tax in 35% tax bracket: 35% taxes + 10% penalty = 45% effective tax/penalty rate
-        # Pull from pre-tax in 37% tax bracket: 37% taxes + 10% penalty = 47% effective tax/penalty rate (all remaining funds)
-
-        # Over 60, after pulling from cash account and still need more cash:
-        # Sell remaining taxable lots that have LT cap gain percentage less than 66%: less than 10% effective tax
-        # Pull from 457(b) in 10% tax bracket
-        # Sell remaining taxable lots that have LT cap gain percentage less than 80%: 10% to 12% effective tax
-        # Pull from 457(b) or pre-tax in 12% tax bracket
-        # Sell remaining taxable lots: 12% to 20% effective tax, given max 20% cap gains tax
-        # Pull remaining funds from 457(b) or pre-tax (all remaining tax brackets, starting at 22%)
+        if IncDict['TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag']:
+            if TotalCash[ct1] < TotalCashNeeded:
+                # Try reducing standard income & increasing LT cap gains by same amount to get more cash, if possible
+                TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc(TotalCash,PreTax,PreTax457b,PostTax,Roth,Income,
+                                                                     Taxes, Age,TotalCashNeeded,ct1,TaxRateInfo,
+                                                                     FilingStatus)
 
 
-        # if CashMinusTaxes still less than Expenses, you've run out of money!
-        if CashMinusTaxes < Expenses[ct1]:
+        if TotalCash[ct1] < TotalCashNeeded:
+            # If unable to obtain enough cash without additional taxes or penalties, proceed with sources that WILL
+            # generate additional taxes and/or penalties
+            GetRemainingNeededCashWithTaxesAndOrPenalties(PreTax,PreTax457b,PostTax,Roth,Income,TotalCash,Taxes,
+                                                          Penalties,IVdict,TaxRateInfo,FilingStatus,TotalCashNeeded,Age,
+                                                          ct1)
+
+        # if TotalCash still less than TotalCashNeeded, you've run out of money!
+        if TotalCashNeeded - TotalCash[ct1] >= 0.01:
             print('Ran out of money!')
+            print('Age = '+str(Age[ct1,0]))
+            OutOfMoneyAge = Age[ct1,0]
             break
 
-        # subtract expenses from CashMinusTaxes
-        CashMinusTaxesMinusExpenses = CashMinusTaxes - Expenses[ct1]
+        # After obtaining cash needed:
 
-        # if extra cash, put remainder of cash into new lot (column) within PostTax since purchasing a new lot
-        if CashMinusTaxesMinusExpenses > 0.:
-            NewLot = np.zeros((np.shape(PostTax)[0],1))
-            NewLot[ct1,0] = CashMinusTaxesMinusExpenses
-            PostTax = np.append(PostTax,NewLot,1)
-            # Also expand PostTaxCG array for new lot, with cap gain = 0 (since newly purchased)
-            PostTaxCG = np.append(PostTaxCG,np.zeros((np.shape(PostTaxCG)[0],1)),1)
+        # if ExcessCash > 0, need to reinvest
+        ExcessCash = TotalCash[ct1] - TotalCashNeeded
+        if ExcessCash >= 0.01:
+            # put remainder of cash into new lot (column) within PostTax since purchasing a new lot
+            NewLot = np.zeros((np.shape(PostTax['Bal'])[0],1))
+            NewLot[ct1,0] = ExcessCash
+            PostTax['Bal'] = np.append(PostTax['Bal'],NewLot,1)
+            # Also expand PostTax['CG'] array for new lot, with cap gain = 0 (since newly purchased)
+            PostTax['CG'] = np.append(PostTax['CG'],np.zeros((np.shape(PostTax['CG'])[0],1)),1)
 
         # Compute total PostTax
-        PostTaxTotal[ct1] = np.sum(PostTax[ct1,:])
+        PostTax['Total'][ct1] = np.sum(PostTax['Bal'][ct1,:])
 
         # Compute total cap gains
-        CapGainsTotal[ct1] = np.sum(PostTaxCG[ct1,:])
+        PostTax['CGtotal'][ct1] = np.sum(PostTax['CG'][ct1,:])
 
         # Compute total assets
-        TotalAssets[ct1] = PostTaxTotal[ct1] + PreTaxTotal[ct1] + PreTax457bTotal[ct1] + RothTotal[ct1] + CashCushion[ct1]
+        TotalAssets[ct1] = PostTax['Total'][ct1] + PreTax['Total'][ct1] + PreTax457b['Total'][ct1] + Roth['Total'][ct1]\
+                           + CashCushion[ct1]
 
     # assemble output dictionary
-    ProjArrays = {'PreTax': PreTax,
-                  'PreTaxTotal': PreTaxTotal,
-                  'PreTax457b': PreTax457b,
-                  'PreTax457bTotal': PreTax457bTotal,
-                  'PostTax': PostTax,
-                  'PostTaxCG': PostTaxCG,
-                  'Roth': Roth,
-                  'RothTotal': RothTotal,
+    ProjArrays = {'PreTax': PreTax['Bal'],
+                  'PreTaxTotal': PreTax['Total'],
+                  'PreTax457b': PreTax457b['Bal'],
+                  'PreTax457bTotal': PreTax457b['Total'],
+                  'PostTax': PostTax['Bal'],
+                  'PostTaxCG': PostTax['CG'],
+                  'Roth': Roth['Bal'],
+                  'RothTotal': Roth['Total'],
                   'CashCushion': CashCushion,
-                  'PostTaxTotal': PostTaxTotal,
-                  'CapGainsTotal': CapGainsTotal,
+                  'PostTaxTotal': PostTax['Total'],
+                  'CapGainsTotal': PostTax['CGtotal'],
                   'TotalAssets': TotalAssets,
                   'Age': Age,
+                  'OutOfMoneyAge': OutOfMoneyAge,
                   'TotalCash': TotalCash,
-                  'TotalStandardIncome': TotalStandardIncome,
-                  'TotalLTcapGainsIncome': TotalLTcapGainsIncome,
-                  'TotalSSincome': TotalSSincome,
-                  'TotalIncome': TotalIncome,
+                  'TotalStandardIncome': Income['TotalStandard'],
+                  'TotalLTcapGainsIncome': Income['TotalLTcapGains'],
+                  'TotalSSincome': Income['TotalSS'],
+                  'TotalIncome': Income['Total'],
                   'Expenses': Expenses,
-                  'SpecifiedIncome': SpecifiedIncome,
+                  'SpecifiedIncome': Income['MaxTotal'],
                   'Taxes': Taxes,
                   'Penalties': Penalties,
-                  'RMDtotal': RMDtotal}
+                  'RMDtotal': RMD['Total']}
 
     return ProjArrays

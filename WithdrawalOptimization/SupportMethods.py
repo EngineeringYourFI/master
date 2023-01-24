@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 #############################################################################################################
 
 # Compute total taxes due from both standard income and long term cap gains / qualified dividends
-def ComputeTaxes(TaxRateInfo,FilingStatus,TotalStandardIncome,TotalLTcapGainsIncome):
+def ComputeTaxesLegacy(TaxRateInfo,FilingStatus,TotalStandardIncome,TotalLTcapGainsIncome):
 
     # Use appropriate standard deduction, tax brackets
     if FilingStatus=='Single':
@@ -190,7 +190,8 @@ def MultiPlot(PlotDict):
     plt.title(PlotDict['TitleText'], x=PlotDict['Title_xoffset'], y=PlotDict['Title_yoffset'], fontsize=PlotDict['TitleFontSize'])
     plt.gca().tick_params(axis='both', which='major', labelsize=30)
     plt.grid(color='gray',linestyle='--') # or just plt.grid(True)  color='lightgray'
-    plt.legend(loc=PlotDict['LegendLoc'],fontsize=PlotDict['LegendFontSize'],numpoints=1)
+    if PlotDict['LegendOn']:
+        plt.legend(loc=PlotDict['LegendLoc'],fontsize=PlotDict['LegendFontSize'],numpoints=1)
     plt.tight_layout()
     plt.savefig(PlotDict['SaveFile'])
     plt.close()

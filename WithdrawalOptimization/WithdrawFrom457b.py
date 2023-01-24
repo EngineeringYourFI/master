@@ -5,21 +5,34 @@
 
 # WithdrawFrom457b.py
 
-def WithdrawFrom457b(MaxStandardIncome,TotalStandardIncome,PreTax457b,TotalCash,TotalIncome):
+def WithdrawFrom457b(Income,PreTax457b,TotalCash, YearCt,PersonCt):
+
+    # Unpack needed dictionary items - for easier access
+    Bal = PreTax457b['Bal'][YearCt,PersonCt]
+    Withdrawn = PreTax457b['Withdrawn'][YearCt,PersonCt] # should always be zero, I believe, but just in case
+    IncTotStd = Income['TotalStandard'][YearCt]
+    IncTot = Income['Total'][YearCt]
+    IncMaxStd = Income['MaxStandard'][YearCt]
 
     # withdraw 457b if room:
-    RemainingStandardIncomeRoom = MaxStandardIncome - TotalStandardIncome
-    if RemainingStandardIncomeRoom > 0. and PreTax457b > 0.:
+    RemainingStandardIncomeRoom = IncMaxStd - IncTotStd
+    if RemainingStandardIncomeRoom > 0. and Bal > 0.:
         # if enough funds in 457b to cover the entire remainder
-        if PreTax457b >= RemainingStandardIncomeRoom:
-            PreTax457b -= RemainingStandardIncomeRoom
-            TotalCash += RemainingStandardIncomeRoom
-            TotalStandardIncome += RemainingStandardIncomeRoom
-            TotalIncome += RemainingStandardIncomeRoom
+        if Bal >= RemainingStandardIncomeRoom:
+            Bal -= RemainingStandardIncomeRoom
+            Withdrawn += RemainingStandardIncomeRoom
+            TotalCash[YearCt] += RemainingStandardIncomeRoom
+            IncTotStd += RemainingStandardIncomeRoom
+            IncTot += RemainingStandardIncomeRoom
         else: # withdraw remaining balance
-            TotalCash += PreTax457b
-            TotalStandardIncome += PreTax457b
-            TotalIncome += PreTax457b
-            PreTax457b = 0.
+            Withdrawn += Bal
+            TotalCash[YearCt] += Bal
+            IncTotStd += Bal
+            IncTot += Bal
+            Bal = 0.
 
-    return PreTax457b, TotalCash, TotalStandardIncome, TotalIncome
+    # Repack any modified immutable dictionary items (mutable items such as arrays will already be modified)
+    PreTax457b['Bal'][YearCt,PersonCt] = Bal
+    PreTax457b['Withdrawn'][YearCt,PersonCt] = Withdrawn
+    Income['TotalStandard'][YearCt] = IncTotStd
+    Income['Total'][YearCt] = IncTot

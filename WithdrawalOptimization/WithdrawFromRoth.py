@@ -7,63 +7,74 @@
 
 import numpy as np
 
-def WithdrawFromRoth(Expenses,Age,Roth,TotalCash,RothContributions,Taxes,RothRolloverAmount,
-                     RothRolloverAge,RothRolloverPerson,Person):
+def WithdrawFromRoth(Roth,TotalCash, TotalCashNeeded,Age,YearCt,PersonCt):
+
+    # Unpack needed dictionary items - for easier access
+    RothBal = Roth['Bal'][YearCt,PersonCt]
+    RothContributions = Roth['Contributions'][YearCt,PersonCt]
+    RothRollAmount = Roth['RolloverAmount']
+    RothRollAge = Roth['RolloverAge']
+    RothRollPerson = Roth['RolloverPerson']
 
     # compute cash needed
-    CashMinusTaxes = TotalCash - Taxes
-    RemainingCashNeeded = Expenses - CashMinusTaxes
+    RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
 
     if RemainingCashNeeded > 0.:
         # first determine if Age >= 60
-        if Age >= 60.:
+        if Age[YearCt,PersonCt] >= 60.:
             # pull from entire balance without worrying about anything - no penalties or taxes
             # if Roth balance greater than remaining cash needed:
-            if Roth > RemainingCashNeeded:
-                TotalCash += RemainingCashNeeded
-                Roth -= RemainingCashNeeded
+            if RothBal > RemainingCashNeeded:
+                TotalCash[YearCt] += RemainingCashNeeded
+                RothBal -= RemainingCashNeeded
             else: # withdraw the entire balance
-                TotalCash += Roth
-                Roth = 0.
+                TotalCash[YearCt] += RothBal
+                RothBal = 0.
         else: # haven't hit 60 (actually 59.5) yet, so need to avoid growth and rollovers less than 5 years old if possible
             # first try to pull from original contributions
-            # if contributions cover entire remaining cash needed:
-            if RothContributions > RemainingCashNeeded:
-                TotalCash += RemainingCashNeeded
+            # and to avoid a scenerio where contributions are greater than balance (e.g. if ROI is negative), use the
+            # min of contributions vs bal
+            MinVal = min(RothContributions,RothBal)
+            # if MinVal covers entire remaining cash needed:
+            if MinVal > RemainingCashNeeded:
+                TotalCash[YearCt] += RemainingCashNeeded
                 RothContributions -= RemainingCashNeeded
-                Roth -= RemainingCashNeeded
+                RothBal -= RemainingCashNeeded
             else:
-                # then just withdraw remaining contributions
-                TotalCash += RothContributions
-                Roth -= RothContributions
-                RothContributions = 0.
+                # then just withdraw MinVal
+                TotalCash[YearCt] += MinVal
+                RothBal -= MinVal
+                RothContributions -= MinVal
 
                 # Then recompute cash needed
-                CashMinusTaxes = TotalCash - Taxes
-                RemainingCashNeeded = Expenses - CashMinusTaxes
+                RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
 
                 # since original contributions not enough, next pull from rollovers if they were made at least 5
                 # years ago
                 # loop over all rollovers
-                for ct in range(len(RothRolloverAmount)):
+                for ct in range(len(RothRollAmount)):
                     # if rollover non-zero, at least 5 years old, corresponds to this person, and still need cash:
-                    if (RothRolloverAmount[ct] > 0.) and (Age >= RothRolloverAge[ct] + 5) and \
-                            (RothRolloverPerson[ct] == Person) and (RemainingCashNeeded > 0.):
-                        # if rollover covers entire remaining cash needed:
-                        if RothRolloverAmount[ct] > RemainingCashNeeded:
-                            TotalCash += RemainingCashNeeded
-                            RothRolloverAmount[ct] -= RemainingCashNeeded
-                            Roth -= RemainingCashNeeded
+                    if (RothRollAmount[ct] > 0.) and (Age[YearCt,PersonCt] >= RothRollAge[ct] + 5) and \
+                            (RothRollPerson[ct] == PersonCt) and (RemainingCashNeeded > 0.):
+                        # and to avoid a scenerio where rollover is greater than balance (e.g. if ROI is negative), use
+                        # the min of rollover vs bal
+                        MinVal = min(RothRollAmount[ct],RothBal)
+                        # if MinVal covers entire remaining cash needed:
+                        if MinVal > RemainingCashNeeded:
+                            TotalCash[YearCt] += RemainingCashNeeded
+                            RothRollAmount[ct] -= RemainingCashNeeded
+                            RothBal -= RemainingCashNeeded
                             # Then recompute cash needed
-                            CashMinusTaxes = TotalCash - Taxes
-                            RemainingCashNeeded = Expenses - CashMinusTaxes
+                            RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
                         else:
-                            # then just withdraw remaining rollover amount
-                            TotalCash += RothRolloverAmount[ct]
-                            Roth -= RothRolloverAmount[ct]
-                            RothRolloverAmount[ct] = 0.
+                            # then just withdraw MinVal
+                            TotalCash[YearCt] += MinVal
+                            RothBal -= MinVal
+                            RothRollAmount[ct] -= MinVal
                             # Then recompute cash needed
-                            CashMinusTaxes = TotalCash - Taxes
-                            RemainingCashNeeded = Expenses - CashMinusTaxes
+                            RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
 
-    return Roth, TotalCash, RothContributions, RothRolloverAmount
+    # Repack any modified immutable dictionary items (mutable items such as arrays/lists will already be modified)
+    Roth['Bal'][YearCt,PersonCt] = RothBal
+    Roth['Contributions'][YearCt,PersonCt] = RothContributions
+

@@ -8,11 +8,13 @@
 import numpy as np
 import copy
 import os
+import time
 
 from TaxRateInfoInput import TaxRateInfoInput
 from SupportMethods import MultiPlot
 from ProjFinalBalance import ProjFinalBalance
 from ProjFinalBalanceTraditional import ProjFinalBalanceTraditional
+from ComputeTaxes import ComputeTaxes
 
 # Compute optimal withdrawal method/sequence of assets to minimize taxes, maximize ACA subsidies, ensure sufficient
 # funds always available, and maximize long term growth of assets
@@ -23,82 +25,115 @@ from ProjFinalBalanceTraditional import ProjFinalBalanceTraditional
 # Bring in 2022 income tax bracket info, used for inputs (modify if beyond 2022)
 TaxRateInfo = TaxRateInfoInput()
 
-# Pre-tax assets initial value
-# always put older person first
-PreTaxIV = np.array([200000.,200000.], dtype=float) # Scenario 1
-# PreTaxIV = 500000. # Scenario 2
-# PreTaxIV = np.array([400000.], dtype=float) # Scenario 3, single person
-# 457b can be withdrawn without 10% penalty before 59.5
-PreTax457bIV = np.array([50000.,50000.], dtype=float)  # Scenario 1
-# PreTax457bIV = 200000. # Scenario 2
-# PreTax457bIV = np.array([100000.], dtype=float)  # Scenario 3, single person
+# Scenario 1, MarriedFilingJointly
+Scenario1 = False
+if Scenario1:
+    # Pre-tax assets initial value
+    # always put older person first
+    PreTaxIV = np.array([200000.,200000.], dtype=float)
+    # 457b can be withdrawn without 10% penalty before 59.5
+    PreTax457bIV = np.array([50000.,50000.], dtype=float)
+
+    # Note: include HSA accounts in Roth category, since it also grows tax-free and can be used without paying taxes if
+    # spent on medical expenses (easy enough as you get older)
+    # always put older person first
+    RothIV = np.array([40000.+10000.,40000.+10000.], dtype=float)
+    RothContributions = np.array([20000.+10000.,20000.+10000.], dtype=float)
+
+    # Social security - taxed different, so don't place in OtherIncomeSources
+    # always put older person first
+    SocialSecurityPayments = np.array([17000,17000], dtype=float) # Scenario 1, MarriedFilingJointly
+    AgeSSwillStart = np.array([67,67], dtype=float) # Scenario 1, MarriedFilingJointly
+    # Note: Once you've reached full retirement age (67 if born after 1960), you can earn as much as you want with no
+    # penalties. Before your full retirement age, you can earn up to $19,560 per year (as of 2022) without having your
+    # Social Security payments reduced. Bad news: If you earn over this limit, your benefits will be cut. Good news:
+    # When you reach full retirement age, any withheld benefits will be returned to you in the form of higher monthly
+    # payments.
+    # https://investor.vanguard.com/investor-resources-education/article/top-questions-about-social-security
+
+    # Maximum standard income to achieve (not LT cap gains)
+    MaxStandardIncome = TaxRateInfo['MarriedFilingJointlyStandardDeduction']
+
+    # When old enough to collect SS, no longer need to worry about ACA subsidies, so set equal to top of 0% LT cap
+    # gains bracket
+    SpecifiedIncomeAfterACA = TaxRateInfo['MarriedFilingJointlyStandardDeduction'] + \
+                              TaxRateInfo['MarriedFilingJointlyIncomeBracketLTcapGainsMins'][1]
+
+    # always put older person first
+    CurrentAge = np.array([40,38]) # Scenario 1, MarriedFilingJointly
+
+    FilingStatus = 'MarriedFilingJointly' # 'Single' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
+
+
+# Scenario 2, Single
+Scenario2 = True
+if Scenario2:
+    # PreTaxIV = np.array([400000.], dtype=float)
+    # PreTax457bIV = np.array([100000.], dtype=float)
+    PreTaxIV = np.array([400000.+100000.], dtype=float)
+    PreTax457bIV = np.array([0.], dtype=float)
+    RothIV = np.array([80000.+20000.], dtype=float)
+    RothContributions = np.array([40000.+20000.], dtype=float)
+    SocialSecurityPayments = np.array([17000], dtype=float)
+    AgeSSwillStart = np.array([67], dtype=float)
+    MaxStandardIncome = TaxRateInfo['SingleStandardDeduction']
+    SpecifiedIncomeAfterACA = TaxRateInfo['SingleStandardDeduction']+TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1]
+    CurrentAge = np.array([40])
+    FilingStatus = 'Single' # 'MarriedFilingJointly' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
 
 # Every lot in post-tax account, to know what cap gains are on each
-PostTaxIV = np.array([50000., 50000., 50000., 50000., 50000., 50000., 50000., 50000.], dtype=float) # Scenario 1 & 3
-# PostTaxIV = np.array([25000., 25000., 25000., 25000., 25000., 25000., 25000., 25000.], dtype=float)  # Scenario 2
+PostTaxIV = np.array([50000., 50000., 50000., 50000., 50000., 50000., 50000., 50000.], dtype=float)
 # current unrealized cap gains on each lot
-CurrentUnrealizedCapGains = np.array([15000., 15000., 15000., 15000., 15000., 15000., 15000., 15000.], dtype=float) # Scenario 1 & 3
-# CurrentUnrealizedCapGains = np.array([7500., 7500., 7500., 7500., 7500., 7500., 7500., 7500.], dtype=float) # Scenario 2
+# CurrentUnrealizedCapGains = np.array([15000., 15000., 15000., 15000., 15000., 15000., 15000., 15000.], dtype=float)
+CurrentUnrealizedCapGains = np.array([40000., 40000., 40000., 40000., 40000., 40000., 40000., 40000.], dtype=float) #*2.
 # NOTE: after the first year, withdrawal code will assume all cap gains are long term cap gains, to simplify the logic.
 # If there ARE any lots purchased the first year of retirement (e.g. you did some tax loss harvesting and then decided
 # to retire that same year), set relevant value in LotPurchasedFirstYear to True.
 # Only a concern for first year of analysis loop, to avoid short term cap gains if possible
 LotPurchasedFirstYear = np.array([False,False,False,False,False,False,False,True])
 
-# Note: include HSA accounts in Roth category, since it also grows tax-free and can be used without paying taxes if
-# spent on medical expenses (easy enough as you get older)
-# always put older person first
-RothIV = np.array([40000.,40000.], dtype=float) # Scenario 1
-# RothIV = np.array([80000.], dtype=float) # Scenario 3, single person
-RothContributions = np.array([20000.,20000.], dtype=float) # Scenario 1
-# RothContributions = np.array([40000.], dtype=float) # Scenario 3, single person
+# Moving cash to Roth (increasing balance and contributions, so can still easily pull from the account just like a cash
+# account) to prevent complications with 0% interest on cash that can happen when some scenarios dip into the cash
+# account vs those that don't
+CashCushion = 0. #20000. #
 
-CashCushion = 20000.
+# TotalIV = PreTaxIV + PreTax457bIV + np.sum(PostTaxIV) + RothIV + CashCushion
 
 # Retirement Income
 # Dividends
-CurrentAnnualQualifiedDividends = 10000. # Scenario 1 & 3
-# CurrentAnnualQualifiedDividends = 5000. # Scenario 2
-CurrentAnnualNonQualifiedDividends = 100. # Scenario 1 & 3
-# Social security - taxed different, so don't place in OtherIncomeSources
-# always put older person first
-SocialSecurityPayments = np.array([17000,17000], dtype=float) # Scenario 1 & 2
-# SocialSecurityPayments = np.array([17000], dtype=float) # Scenario 3, single person
-AgeSSwillStart = np.array([67,67], dtype=float) # Scenario 1 & 2
-# AgeSSwillStart = np.array([67], dtype=float) # Scenario 3, single person
-# Note: Once you've reached full retirement age (67 if born after 1960), you can earn as much as you want with no penalties.
-# Before your full retirement age, you can earn up to $19,560 per year (as of 2022) without having your Social Security
-# payments reduced. Bad news: If you earn over this limit, your benefits will be cut. Good news: When you reach full
-# retirement age, any withheld benefits will be returned to you in the form of higher monthly payments.
-# https://investor.vanguard.com/investor-resources-education/article/top-questions-about-social-security
+# CurrentAnnualQualifiedDividends = 10000. # Scenario 1 & 2
+# CurrentAnnualNonQualifiedDividends = 100. # Scenario 1 & 2
+QualifiedDividendYield = 0. #0.016 # based on 5-year average dividend yield of VTSAX
+NonQualifiedDividendYield = 0.0 # assume negligible
+
 # Other income
 OtherIncomeSources = np.array([], dtype=float) # e.g. pension, in current dollars
 AgeOtherIncomeSourcesWillStart = np.array([], dtype=float)  # using first person in CurrentAge array
-# Maximum standard income to achieve (not LT cap gains)
-MaxStandardIncome = TaxRateInfo['MarriedFilingJointlyStandardDeduction'] # Scenario 1 & 2
-# MaxStandardIncome = TaxRateInfo['SingleStandardDeduction'] # Scenario 3, single person
+
+# Change to MaxStandardIncome at any particular age / year
+MaxStandardIncomeChange = np.array([], dtype=float) #10000
+AgeMaxStandardIncomeChangeWillStart = np.array([], dtype=float)  # using first person in CurrentAge array #73
+
 # Income need to achieve, e.g. for maximizing ACA subsidies
 SpecifiedIncome = 50000.
-# When old enough to collect SS, no longer need to worry about ACA subsidies, so set equal to top of 0% LT cap gains bracket
-SpecifiedIncomeAfterACA = TaxRateInfo['MarriedFilingJointlyIncomeBracketLTcapGainsMins'][1] # Scenario 1 & 2
-# SpecifiedIncomeAfterACA = TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1] # Scenario 3, single person
 
 # Retirement Expenses - in current year dollars, as is everything else in this simulation
-Exp = 40000. # Scenario 1
-# Exp = 45000. # Scenario 2
+Exp = 40000. 
+ExpRate = 0. # How much expenses (in current day dollars) change each year
 
 # Future expense adjustments (e.g. a mortgage is paid off)
 FutureExpenseAdjustments = np.array([-800.*12], dtype=float)
 FutureExpenseAdjustmentsAge = np.array([66], dtype=float) # using first person in CurrentAge array
 
-# always put older person first
-CurrentAge = np.array([40,38]) # Scenario 1 & 2
-# CurrentAge = np.array([40]) # Scenario 3, single person
-NumYearsToProject = 52
-# Scenario 1 & 2
-FilingStatus = 'MarriedFilingJointly' # 'Single' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
-# Scenario 3, single person
-# FilingStatus = 'Single' # 'MarriedFilingJointly' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
+NumYearsToProject = 52 #26 #
+
+# Taxes and Penalties generated from income in year prior to starting simulation
+TaxesGenPrevYear = 0.
+PenaltiesGenPrevYear = 0.
+# Taxes and Penalties paid in year prior to starting simulation
+# (if more than generated, you'll get refund at start; if less than generated, you'll owe taxes at start)
+TaxesPaidPrevYear = 0.
+PenaltiesPaidPrevYear = 0.
 
 # Annual investment interest rate (i.e. expected investment return)
 R = 0.07
@@ -109,7 +144,12 @@ OutDir = './'
 OutputFile = 'Output.txt'
 
 # Tax and Penalty Minimization (TPM) Withdrawal Method or Traditional Withdrawal Method
-TPMorTraditionalWithdrawal = 'TPM' #'Both' #'Traditional' #
+TPMorTraditionalWithdrawal = 'TPM' #'Traditional' #'Both' #
+
+# Flag dictating whether to run TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc method or not
+# This method has not yet produces better results than not running the method - but it's available if desired
+# And it might produce better results when an ACA premiums/subsidies model is in place
+TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag = True
 
 # TPM Method - Withdraw from 457b or Pretax first
 TPMwithdraw457bFirst = True
@@ -132,19 +172,27 @@ IVdict = {'PreTaxIV': PreTaxIV,
           'LotPurchasedFirstYear': LotPurchasedFirstYear,
           'RothIV': RothIV,
           'RothContributions': RothContributions,
-          'CashCushion': CashCushion}
+          'CashCushion': CashCushion,
+          'TaxesGenPrevYear': TaxesGenPrevYear,
+          'TaxesPaidPrevYear': TaxesPaidPrevYear,
+          'PenaltiesGenPrevYear': PenaltiesGenPrevYear,
+          'PenaltiesPaidPrevYear': PenaltiesPaidPrevYear}
 
-IncDict = {'CurrentAnnualQualifiedDividends': CurrentAnnualQualifiedDividends,
-           'CurrentAnnualNonQualifiedDividends': CurrentAnnualNonQualifiedDividends,
+IncDict = {'QualifiedDividendYield': QualifiedDividendYield, #'CurrentAnnualQualifiedDividends': CurrentAnnualQualifiedDividends,
+           'NonQualifiedDividendYield': NonQualifiedDividendYield, #'CurrentAnnualNonQualifiedDividends': CurrentAnnualNonQualifiedDividends,
            'SocialSecurityPayments': SocialSecurityPayments,
            'AgeSSwillStart': AgeSSwillStart,
            'OtherIncomeSources': OtherIncomeSources,
            'AgeOtherIncomeSourcesWillStart': AgeOtherIncomeSourcesWillStart,
            'MaxStandardIncome': MaxStandardIncome,
+           'MaxStandardIncomeChange': MaxStandardIncomeChange,
+           'AgeMaxStandardIncomeChangeWillStart': AgeMaxStandardIncomeChangeWillStart,
            'SpecifiedIncome': SpecifiedIncome,
-           'SpecifiedIncomeAfterACA': SpecifiedIncomeAfterACA}
+           'SpecifiedIncomeAfterACA': SpecifiedIncomeAfterACA,
+           'TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag': TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag}
 
 ExpDict = {'Exp': Exp,
+           'ExpRate': ExpRate,
            'FutureExpenseAdjustments': FutureExpenseAdjustments,
            'FutureExpenseAdjustmentsAge': FutureExpenseAdjustmentsAge}
 
@@ -160,7 +208,7 @@ DefaultPlotDict = \
      'ylabelFontSize': 30, 'xlabelFontSize': 30,
      'Title_xoffset': 0.5, 'Title_yoffset': 1.04,
      'TitleFontSize': 32,
-     'LegendLoc': 'best', 'LegendFontSize': 20,
+     'LegendLoc': 'best', 'LegendFontSize': 20, 'LegendOn': True,
      'PlotSecondaryLines': False}
 
 #############################################################################################################
@@ -173,17 +221,23 @@ if not os.path.exists(OutDir):
 
 # Single run of ProjFinalBalance
 
+t0 = time.time()
+
 if TPMorTraditionalWithdrawal == 'TPM':
     ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus,
                                   TPMwithdraw457bFirst)
 elif TPMorTraditionalWithdrawal == 'Traditional':
     ProjArrays = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R,
                                              FilingStatus)
-else:
+elif TPMorTraditionalWithdrawal == 'Both':
     ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus,
                                   TPMwithdraw457bFirst)
     ProjArraysTraditional = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R,
                                              FilingStatus)
+
+t1 = time.time()
+SimTime = t1-t0
+print('Projection Time: '+'{:.2f}'.format(SimTime)+' seconds')
 
 #############################################################################################################
 
@@ -201,8 +255,10 @@ file.write('CashCushion Final: $'+'{:.2f}'.format(ProjArrays['CashCushion'][-1])
 file.write('CapGainsTotal Final: $'+'{:.2f}'.format(ProjArrays['CapGainsTotal'][-1])+'\n')
 file.write('Taxes Total: $'+'{:.2f}'.format(np.sum(ProjArrays['Taxes']))+'\n')
 file.write('Penalties Total: $'+'{:.2f}'.format(np.sum(ProjArrays['Penalties']))+'\n')
-file.write('RMDs Total: $'+'{:.2f}'.format(np.sum(ProjArrays['RMDtotal']))+'\n')
-
+file.write('RMDs Total: $'+'{:.2f}'.format(np.sum(ProjArrays['RMDtotal']))+'\n\n')
+file.write('Sim Time: '+'{:.2f}'.format(SimTime)+' seconds\n')
+if np.isnan(ProjArrays['OutOfMoneyAge']) == False:
+    file.write('Age money ran out: '+'{:.0f}'.format(ProjArrays['OutOfMoneyAge'])+'\n')
 file.close()
 
 #############################################################################################################
@@ -251,24 +307,24 @@ if AssetBalancesVsAge:
 # Plot yearly results
 if YearlyValuesVsAge:
 
-    # SpecifiedIncome, TotalStandardIncome, TotalLTcapGainsIncome, TotalSSincome, TotalIncome, TotalCash, Expenses,
-    # Taxes, Penalties, RMDs
-    NumPlots = 10
-    ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
-    ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
-    ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
-    ValuesArray[2,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
-    ValuesArray[3,:] = ProjArrays['TotalSSincome']/1000.
-    ValuesArray[4,:] = ProjArrays['TotalIncome']/1000.
-    ValuesArray[5,:] = ProjArrays['TotalCash']/1000.
-    ValuesArray[6,:] = ProjArrays['Expenses']/1000.
-    ValuesArray[7,:] = ProjArrays['Taxes']/1000.
-    ValuesArray[8,:] = ProjArrays['Penalties']/1000.
-    ValuesArray[9,:] = ProjArrays['RMDtotal']/1000.
+    # TotalStandardIncome, TotalLTcapGainsIncome, TotalSSincome, TotalIncome, TotalCash, Expenses,
+    # Taxes, Penalties, RMDs # removed: SpecifiedIncome,
+    NumPlots = 9 #10
+    ValuesArray = np.zeros((NumPlots,len(ProjArrays['TotalStandardIncome'])))
+    # ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
+    ValuesArray[0,:] = ProjArrays['TotalStandardIncome']/1000.
+    ValuesArray[1,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
+    ValuesArray[2,:] = ProjArrays['TotalSSincome']/1000.
+    ValuesArray[3,:] = ProjArrays['TotalIncome']/1000.
+    ValuesArray[4,:] = ProjArrays['TotalCash']/1000.
+    ValuesArray[5,:] = ProjArrays['Expenses']/1000.
+    ValuesArray[6,:] = ProjArrays['Taxes']/1000.
+    ValuesArray[7,:] = ProjArrays['Penalties']/1000.
+    ValuesArray[8,:] = ProjArrays['RMDtotal']/1000.
 
-    PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
-                      'TotalCash','Expenses','Taxes','Penalties','RMDs']
-    PlotColorArray = ['k','r','b','g','c','m','y','limegreen','fuchsia','saddlebrown'] #orangered, chocolate, peru, darkorange, gold, olive, slategrey
+    PlotLabelArray = ['TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
+                      'TotalCash','Expenses','Taxes','Penalties','RMDs'] #'SpecifiedIncome',
+    PlotColorArray = ['r','b','g','c','m','y','limegreen','fuchsia','saddlebrown'] # 'k', #orangered, chocolate, peru, darkorange, gold, olive, slategrey
 
     # Initialize plot dict using default dict
     PlotDict = copy.deepcopy(DefaultPlotDict)
@@ -295,21 +351,21 @@ if YearlyValuesVsAge:
 # and plot without TotalCash
 if YearlyValuesNoTotalCashVsAge:
 
-    NumPlots = 9
-    ValuesArray = np.zeros((NumPlots,len(ProjArrays['SpecifiedIncome'])))
-    ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
-    ValuesArray[1,:] = ProjArrays['TotalStandardIncome']/1000.
-    ValuesArray[2,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
-    ValuesArray[3,:] = ProjArrays['TotalSSincome']/1000.
-    ValuesArray[4,:] = ProjArrays['TotalIncome']/1000.
-    ValuesArray[5,:] = ProjArrays['Expenses']/1000.
-    ValuesArray[6,:] = ProjArrays['Taxes']/1000.
-    ValuesArray[7,:] = ProjArrays['Penalties']/1000.
-    ValuesArray[8,:] = ProjArrays['RMDtotal']/1000.
+    NumPlots = 8 #9
+    ValuesArray = np.zeros((NumPlots,len(ProjArrays['TotalStandardIncome'])))
+    # ValuesArray[0,:] = ProjArrays['SpecifiedIncome']/1000.
+    ValuesArray[0,:] = ProjArrays['TotalStandardIncome']/1000.
+    ValuesArray[1,:] = ProjArrays['TotalLTcapGainsIncome']/1000.
+    ValuesArray[2,:] = ProjArrays['TotalSSincome']/1000.
+    ValuesArray[3,:] = ProjArrays['TotalIncome']/1000.
+    ValuesArray[4,:] = ProjArrays['Expenses']/1000.
+    ValuesArray[5,:] = ProjArrays['Taxes']/1000.
+    ValuesArray[6,:] = ProjArrays['Penalties']/1000.
+    ValuesArray[7,:] = ProjArrays['RMDtotal']/1000.
 
-    PlotLabelArray = ['SpecifiedIncome','TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
-                      'Expenses','Taxes','Penalties','RMDs']
-    PlotColorArray = ['k','r','b','g','c','y','limegreen','fuchsia','saddlebrown']
+    PlotLabelArray = ['TotalStandardIncome','TotalLTcapGainsIncome','TotalSSincome','TotalIncome',
+                      'Expenses','Taxes','Penalties','RMDs'] #'SpecifiedIncome',
+    PlotColorArray = ['r','b','g','c','y','limegreen','fuchsia','saddlebrown'] #'k',
 
     # Initialize plot dict using default dict
     PlotDict = copy.deepcopy(DefaultPlotDict)

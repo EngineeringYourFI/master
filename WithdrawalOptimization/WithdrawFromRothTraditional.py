@@ -5,8 +5,6 @@
 
 # WithdrawFromRothTraditional.py
 
-import numpy as np
-
 def WithdrawFromRothTraditional(TotalCashNeeded,Roth,RothContributions,TotalCash,Age):
 
     # compute cash needed
@@ -26,15 +24,18 @@ def WithdrawFromRothTraditional(TotalCashNeeded,Roth,RothContributions,TotalCash
             # so only pull from original contributions
             # not doing RothTemp rollovers from PreTaxTemp in this method, using PreTaxTemp withdrawals
             # immediately for expenses
+            # and to avoid a scenerio where contributions are greater than balance (e.g. if ROI is negative), use the
+            # min of contributions vs bal
+            MinVal = min(RothContributions,Roth)
             # if contributions cover entire remaining cash needed:
-            if RothContributions > RemainingCashNeeded:
+            if MinVal > RemainingCashNeeded:
                 TotalCash += RemainingCashNeeded
                 RothContributions -= RemainingCashNeeded
                 Roth -= RemainingCashNeeded
             else:
-                # then just withdraw remaining contributions
-                TotalCash += RothContributions
-                Roth -= RothContributions
-                RothContributions = 0.
+                # then just withdraw MinVal #remaining contributions
+                TotalCash += MinVal #RothContributions
+                Roth -= MinVal # RothContributions
+                RothContributions -= MinVal #= 0.
 
     return Roth, RothContributions, TotalCash
