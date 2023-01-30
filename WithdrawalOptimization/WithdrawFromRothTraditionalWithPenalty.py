@@ -7,17 +7,21 @@
 
 import numpy as np
 
-def WithdrawFromRothTraditionalWithPenalty(TotalCashNeeded,Roth,TotalCash,Age,Penalties):
+def WithdrawFromRothTraditionalWithPenalty(TotalCashNeeded,Roth,TotalCash,TotalStandardIncome,TotalIncome,Age,Penalties):
 
     RemainingCashNeeded = TotalCashNeeded - TotalCash
     if RemainingCashNeeded > 0 and Age < 60.:
         if Roth >= RemainingCashNeeded:
             TotalCash += RemainingCashNeeded
+            TotalStandardIncome += RemainingCashNeeded
+            TotalIncome += RemainingCashNeeded
             Roth -= RemainingCashNeeded
             Penalties += np.round(0.1*RemainingCashNeeded,2)
         else: # withdraw the entire balance
             TotalCash += Roth
+            TotalStandardIncome += Roth
+            TotalIncome += Roth
             Penalties += 0.1*Roth
             Roth = 0.
 
-    return Roth, TotalCash, Penalties
+    return Roth, TotalCash, TotalStandardIncome, TotalIncome, Penalties

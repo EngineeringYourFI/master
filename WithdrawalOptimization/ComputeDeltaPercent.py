@@ -49,13 +49,28 @@ def ComputeDeltaPercent(PostTax,Roth,PreTax457b,PreTax,NumAccounts,NumPeople,Ste
     # Roth
     ##################################################################################################################
 
+    # Roth will only be non-zero at this point if under 60, because if over 60 it will be depleted in
+    # GetRemainingNeededCashNoTaxesOrPenalties method
+
     # Pull Step from Roth - for each person
     for ct in range(NumPeople):
-        WithdrawalDeltaArray[1+ct], Penalty = WithdrawFromRothDelta(Roth,Step,0,YearCt,ct,False)
+        WithdrawalDeltaArray[1+ct], Penalty, StdIncDeltaFromEarnings = WithdrawFromRothDelta(Roth,Step,0,YearCt,ct,False)
         if WithdrawalDeltaArray[1+ct] > 0.: # if Roth still has non-zero balance
-            # Determine Delta % in penalties (Roth will only be non-zero at this point if under 60, because if over
-            # 60 it will be depleted in GetRemainingNeededCashNoTaxesOrPenalties method)
-            DeltaPercentArray[1+ct] = Penalty / WithdrawalDeltaArray[1+ct]
+            # if any earnings were withdrawn, those will increase your standard income
+            if StdIncDeltaFromEarnings > 0.:
+                IncTotStdWithDelta = IncTotStd + StdIncDeltaFromEarnings
+                # if SSI, recompute taxable SSI for higher income, then update total standard income
+                if TotalSS > 0.:
+                    NonSSstandardIncome = IncTotStdWithDelta - TaxableSS
+                    TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
+                    IncTotStdWithDelta = NonSSstandardIncome + TaxableSSdelta
+
+                # Determine Delta % in taxes
+                NewTaxes = ComputeTaxes(TaxRateInfo,FilingStatus,IncTotStdWithDelta,IncTotLTcapGains)
+                DeltaTaxes = NewTaxes['Total'] - Taxes[YearCt]
+            else:
+                DeltaTaxes = 0.
+            DeltaPercentArray[1+ct] = (DeltaTaxes+Penalty) / WithdrawalDeltaArray[1+ct]
         else:
             DeltaPercentArray[1+ct] = np.nan
 

@@ -27,7 +27,7 @@ def ExecuteDeltaWithdrawal(PostTax,Roth,PreTax457b,PreTax,Taxes,Income,TotalCash
     # 1. PreTax457b (good for reducing RMDs)
     # 2. PreTax (good for reducing RMDs)
     # 3. PostTax
-    # 4. Roth (best for estate, so try to tap last)
+    # 4. Roth (best for estate, and if it can push past 59.5 you won't owe taxes either, so try to tap last)
 
     ##################################################################################################################
     # 457b
@@ -114,8 +114,28 @@ def ExecuteDeltaWithdrawal(PostTax,Roth,PreTax457b,PreTax,Taxes,Income,TotalCash
                 AcctToDrawFrom = ct
                 break
 
-        Withdrawal, Penalty = WithdrawFromRothDelta(Roth,Step,TotalCash,YearCt,AcctToDrawFrom,True)
+        Withdrawal, Penalty, StdIncDeltaFromEarnings = WithdrawFromRothDelta(Roth,Step,TotalCash,YearCt,AcctToDrawFrom,True)
         Penalties[YearCt] += Penalty
+
+        # if any earnings were withdrawn, those will increase your standard income and thus potentially your tax bill
+        if StdIncDeltaFromEarnings > 0.:
+            IncTotStd += StdIncDeltaFromEarnings
+
+            # if SSI, recompute taxable SSI for higher income, then update total standard income
+            if TotalSS > 0.:
+                NonSSstandardIncome = IncTotStd - TaxableSS
+                TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
+                Income['TaxableSS'][YearCt] = TaxableSS # updating
+                IncTotStd = NonSSstandardIncome + TaxableSSdelta
+
+            # updating, for use here & next iteration of while loop
+            Income['TotalStandard'][YearCt] = IncTotStd # updating
+            Income['Total'][YearCt] = IncTotStd + IncTotLTcapGains # updating
+
+            # Update taxes
+            NewTaxes = ComputeTaxes(TaxRateInfo,FilingStatus,IncTotStd,IncTotLTcapGains)
+            Taxes[YearCt] = NewTaxes['Total']
+
     else:
         print('Delta percent min indices not corresponding to specific account - investigate.')
         exit()
