@@ -149,7 +149,7 @@ TPMorTraditionalWithdrawal = 'TPM' #'Traditional' #'Both' #
 # Flag dictating whether to run TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc method or not
 # This method has not yet produces better results than not running the method - but it's available if desired
 # And it might produce better results when an ACA premiums/subsidies model is in place
-TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag = True
+TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag = False
 
 # TPM Method - Withdraw from 457b or Pretax first
 TPMwithdraw457bFirst = True
