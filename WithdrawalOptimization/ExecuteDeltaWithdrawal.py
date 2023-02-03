@@ -121,12 +121,14 @@ def ExecuteDeltaWithdrawal(PostTax,Roth,PreTax457b,PreTax,Taxes,Income,TotalCash
         if StdIncDeltaFromEarnings > 0.:
             IncTotStd += StdIncDeltaFromEarnings
 
+            # Should not have both SSI (earliest start age is 62) and taxed Roth withdrawals (latest is 59.5), so
+            # commenting this out
             # if SSI, recompute taxable SSI for higher income, then update total standard income
-            if TotalSS > 0.:
-                NonSSstandardIncome = IncTotStd - TaxableSS
-                TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
-                Income['TaxableSS'][YearCt] = TaxableSS # updating
-                IncTotStd = NonSSstandardIncome + TaxableSSdelta
+            # if TotalSS > 0.:
+            #     NonSSstandardIncome = IncTotStd - TaxableSS
+            #     TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
+            #     Income['TaxableSS'][YearCt] = TaxableSS # updating
+            #     IncTotStd = NonSSstandardIncome + TaxableSSdelta
 
             # updating, for use here & next iteration of while loop
             Income['TotalStandard'][YearCt] = IncTotStd # updating

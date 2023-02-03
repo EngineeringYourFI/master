@@ -59,11 +59,14 @@ def ComputeDeltaPercent(PostTax,Roth,PreTax457b,PreTax,NumAccounts,NumPeople,Ste
             # if any earnings were withdrawn, those will increase your standard income
             if StdIncDeltaFromEarnings > 0.:
                 IncTotStdWithDelta = IncTotStd + StdIncDeltaFromEarnings
-                # if SSI, recompute taxable SSI for higher income, then update total standard income
-                if TotalSS > 0.:
-                    NonSSstandardIncome = IncTotStdWithDelta - TaxableSS
-                    TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
-                    IncTotStdWithDelta = NonSSstandardIncome + TaxableSSdelta
+
+                # Should not have both SSI (earliest start age is 62) and taxed Roth withdrawals (latest is 59.5), so
+                # commenting this out
+                # # if SSI, recompute taxable SSI for higher income, then update total standard income
+                # if TotalSS > 0.:
+                #     NonSSstandardIncome = IncTotStdWithDelta - TaxableSS
+                #     TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
+                #     IncTotStdWithDelta = NonSSstandardIncome + TaxableSSdelta
 
                 # Determine Delta % in taxes
                 NewTaxes = ComputeTaxes(TaxRateInfo,FilingStatus,IncTotStdWithDelta,IncTotLTcapGains)
