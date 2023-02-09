@@ -43,7 +43,7 @@ def ExecuteDeltaWithdrawal(PostTax,Roth,PreTax457b,PreTax,Taxes,Income,TotalCash
 
         Withdrawal = WithdrawFrom457bDelta(PreTax457b,Income,TotalCash,Step,YearCt,AcctToDrawFrom,True)
         IncTotStd = Income['TotalStandard'][YearCt] # updating, for use here & next iteration of while loop
-        # If SSI, recompute taxable SSI for higher income, then update total standard income
+        # If SSincome, recompute taxable SSincome for higher income, then update total standard income
         if TotalSS > 0.:
             NonSSstandardIncome = IncTotStd - TaxableSS
             TaxableSS = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
@@ -70,7 +70,7 @@ def ExecuteDeltaWithdrawal(PostTax,Roth,PreTax457b,PreTax,Taxes,Income,TotalCash
         Withdrawal, Penalty = WithdrawFromPreTaxDelta(PreTax,Income,TotalCash,Step,Age,YearCt,AcctToDrawFrom,True)
         Penalties[YearCt] += Penalty
         IncTotStd = Income['TotalStandard'][YearCt] # updating, for use here & next iteration of while loop
-        # If SSI, recompute taxable SSI for higher income, then update total standard income
+        # If SSincome, recompute taxable SSincome for higher income, then update total standard income
         if TotalSS > 0.:
             NonSSstandardIncome = IncTotStd - TaxableSS
             TaxableSS = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
@@ -90,7 +90,7 @@ def ExecuteDeltaWithdrawal(PostTax,Roth,PreTax457b,PreTax,Taxes,Income,TotalCash
         # Then withdraw from PostTax
         Withdrawal, LTCGdelta = WithdrawFromPostTaxDelta(PostTax,Step,TotalCash,Income,IVdict,YearCt,True)
         IncTotLTcapGains = Income['TotalLTcapGains'][YearCt] # updating, for use here & next iteration of while loop
-        # If SSI, recompute taxable SSI for higher income, then update total standard income
+        # If SSincome, recompute taxable SSincome for higher income, then update total standard income
         if TotalSS > 0.:
             NonSSstandardIncome = IncTotStd - TaxableSS
             TaxableSS = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
@@ -121,9 +121,9 @@ def ExecuteDeltaWithdrawal(PostTax,Roth,PreTax457b,PreTax,Taxes,Income,TotalCash
         if StdIncDeltaFromEarnings > 0.:
             IncTotStd += StdIncDeltaFromEarnings
 
-            # Should not have both SSI (earliest start age is 62) and taxed Roth withdrawals (latest is 59.5), so
+            # Should not have both SSincome (earliest start age is 62) and taxed Roth withdrawals (latest is 59.5), so
             # commenting this out
-            # if SSI, recompute taxable SSI for higher income, then update total standard income
+            # if SSincome, recompute taxable SSincome for higher income, then update total standard income
             # if TotalSS > 0.:
             #     NonSSstandardIncome = IncTotStd - TaxableSS
             #     TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)

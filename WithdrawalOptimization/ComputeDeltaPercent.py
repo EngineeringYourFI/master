@@ -31,7 +31,7 @@ def ComputeDeltaPercent(PostTax,Roth,PreTax457b,PreTax,NumAccounts,NumPeople,Ste
     # Sort the lots from lowest to highest percentage LT cap gain and sell them in that order to minimize taxes
     WithdrawalDeltaArray[0], LTCGdelta = WithdrawFromPostTaxDelta(PostTax,Step,0,0,IVdict,YearCt,False)
     if WithdrawalDeltaArray[0] > 0.: # if PostTax still has non-zero balance
-        # if SSI, recompute taxable SSI for higher income, then update total standard income
+        # if SSincome, recompute taxable SSincome for higher income, then update total standard income
         if TotalSS > 0.:
             NonSSstandardIncome = IncTotStd - TaxableSS
             TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains + LTCGdelta, TotalSS,
@@ -60,9 +60,9 @@ def ComputeDeltaPercent(PostTax,Roth,PreTax457b,PreTax,NumAccounts,NumPeople,Ste
             if StdIncDeltaFromEarnings > 0.:
                 IncTotStdWithDelta = IncTotStd + StdIncDeltaFromEarnings
 
-                # Should not have both SSI (earliest start age is 62) and taxed Roth withdrawals (latest is 59.5), so
+                # Should not have both SSincome (earliest start age is 62) and taxed Roth withdrawals (latest is 59.5), so
                 # commenting this out
-                # # if SSI, recompute taxable SSI for higher income, then update total standard income
+                # # if SSincome, recompute taxable SSincome for higher income, then update total standard income
                 # if TotalSS > 0.:
                 #     NonSSstandardIncome = IncTotStdWithDelta - TaxableSS
                 #     TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains, TotalSS, FilingStatus)
@@ -86,7 +86,7 @@ def ComputeDeltaPercent(PostTax,Roth,PreTax457b,PreTax,NumAccounts,NumPeople,Ste
     for ct in range(NumPeople):
         WithdrawalDeltaArray[StartInd+ct] = WithdrawFrom457bDelta(PreTax457b,0,0,Step,YearCt,ct,False)
         if WithdrawalDeltaArray[StartInd+ct] > 0.: # if PreTax457b still has non-zero balance
-            # if SSI, recompute taxable SSI for higher income, then update total standard income
+            # if SSincome, recompute taxable SSincome for higher income, then update total standard income
             if TotalSS > 0.:
                 NonSSstandardIncome = IncTotStd - TaxableSS
                 TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains +
@@ -111,7 +111,7 @@ def ComputeDeltaPercent(PostTax,Roth,PreTax457b,PreTax,NumAccounts,NumPeople,Ste
     for ct in range(NumPeople):
         WithdrawalDeltaArray[StartInd+ct], Penalty = WithdrawFromPreTaxDelta(PreTax,0,0,Step,Age,YearCt,ct,False)
         if WithdrawalDeltaArray[StartInd+ct] > 0.: # if PreTax still has non-zero balance
-            # if SSI, recompute taxable SSI for higher income, then update total standard income
+            # if SSincome, recompute taxable SSincome for higher income, then update total standard income
             if TotalSS > 0.:
                 NonSSstandardIncome = IncTotStd - TaxableSS
                 TaxableSSdelta = TaxableSSconsolidated(NonSSstandardIncome + IncTotLTcapGains +

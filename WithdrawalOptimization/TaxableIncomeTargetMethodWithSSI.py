@@ -5,6 +5,9 @@
 
 # TaxableIncomeTargetMethodWithSSI.py
 
+# Note: any references to "SSI" stand for normal social security income (RIB), not Supplemental Security Income (a
+# different program that is also provided by the Social Security Administration).
+
 import numpy as np
 from TaxableSSconsolidated import TaxableSSconsolidated
 from ComputeMaxAdjustableNonSSstandardIncome import ComputeMaxAdjustableNonSSstandardIncome

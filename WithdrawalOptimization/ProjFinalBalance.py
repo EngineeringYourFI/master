@@ -204,6 +204,8 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
         if Income['TotalSS'][ct1] > 0.:
 
             # Run TaxableIncomeTargetMethodWithSSI
+            # Note: any references to "SSI" stand for normal social security income (RIB), not Supplemental Security
+            # Income (a different program that is also provided by the Social Security Administration).
             TaxableSSdesired, Income['MaxStandard'][ct1], Income['MaxTotal'][ct1] = \
                 TaxableIncomeTargetMethodWithSSI(Income['TotalStandard'][ct1],Income['TotalLTcapGains'][ct1],
                                                  Income['TotalSS'][ct1],Income['MaxStandard'][ct1],

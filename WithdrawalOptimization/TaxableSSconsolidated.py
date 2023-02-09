@@ -22,7 +22,7 @@ def TaxableSSconsolidated(NonSSincome,TotalSSincome,FilingStatus):
         print('Filing Status not recognized. Exiting.')
         sys.exit()
 
-    # If total non-SS income plus half the SS income do not reach minimum income, then none of the SSI is taxable
+    # If total non-SS income plus half the SS income do not reach minimum income, then none of the SSincome is taxable
     if (TotalSSincome*0.5 + NonSSincome) < MinOtherIncomeForSStoBeTaxed:
         TaxableSSincome = 0.
         return TaxableSSincome
@@ -50,8 +50,8 @@ def TaxableSSconsolidated(NonSSincome,TotalSSincome,FilingStatus):
         else:
             TaxableSSin50percentBracket = TotalSSincome*0.5
 
-    # The taxable amount of SSI is equal to TaxableSSin50percentBracket + 85% of amount over 50% bracket, until it
-    # reaches 85% of the SSI, at which it's set to 85% of SSI for all higher values
+    # The taxable amount of SSincome is equal to TaxableSSin50percentBracket + 85% of amount over 50% bracket, until it
+    # reaches 85% of the SSincome, at which it's set to 85% of SSincome for all higher values
     # Thus set TaxableSSincome to the smaller of TaxableSSin50percentBracket+0.85*DeltaOver50percentTaxableBracket vs
     # 0.85*TotalSSincome
     if 0.85*TotalSSincome > TaxableSSin50percentBracket+0.85*DeltaOver50percentTaxableBracket:
