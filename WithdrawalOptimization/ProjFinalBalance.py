@@ -26,7 +26,7 @@ pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=desired_width)
 
 # Project final balance, from inputs (e.g. initial balances, tax rates, etc.)
-def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus,
+def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,NumYearsToProject, R, FilingStatus,
                      TPMwithdraw457bFirst):
 
     # number of people (1 or 2)
@@ -73,7 +73,8 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToPro
               'MaxStandard': np.zeros(NumYearsToProject),
               'MaxTotal': np.zeros(NumYearsToProject)} # previously called SpecifiedIncome
     RMD = {'Bal': np.zeros((NumYearsToProject,np.size(CurrentAge))),
-           'Total': np.zeros(NumYearsToProject)}
+           'Total': np.zeros(NumYearsToProject),
+           'RMDstartAge': RMDstartAge}
     Age = np.zeros((NumYearsToProject,np.size(CurrentAge)))
     Age[0,:] = CurrentAge
     TotalCash = np.zeros(NumYearsToProject)

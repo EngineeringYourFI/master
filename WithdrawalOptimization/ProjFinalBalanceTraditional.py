@@ -24,7 +24,7 @@ pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=desired_width)
 
 # Use standard / traditional method for retirement withdrawal order: PostTax until depleted, PreTax until depleted, Roth
-def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus):
+def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,NumYearsToProject, R, FilingStatus):
 
     # Number of people (1 or 2)
     NumPeople = np.size(IVdict['PreTaxIV'])
@@ -176,7 +176,7 @@ def ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,Nu
 
         # Required Minimum Distributions (RMDs)
         for ct2 in range(np.shape(PreTax)[1]):
-            if Age[ct1,ct2] >= 72.:
+            if Age[ct1,ct2] >= RMDstartAge[ct2]:
                 # PreTax
                 RMDpretax, WR = ComputeRMD(PreTax[ct1,ct2],Age[ct1,ct2])
                 # 457b

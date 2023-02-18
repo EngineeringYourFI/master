@@ -11,7 +11,7 @@ def ComputeRMD(PreTax,Age):
 
     # Ages for RMDs
     TableAges = np.arange(72,121,1, dtype=float)
-    # Distribution Periods - 2022 values
+    # Distribution Periods - 2023 values
     DistPer = np.array([27.4,26.5,25.5,24.6,23.7,22.9,22.0,21.1,20.2,19.4,18.5,17.7,16.8,16.0,15.2,14.4,13.7,12.9,12.2,
                         11.5,10.8,10.1,9.5,8.9,8.4,7.8,7.3,6.8,6.4,6.0,5.6,5.2,4.9,4.6,4.3,4.1,3.9,3.7,3.5,3.4,3.3,3.1,
                         3.0,2.9,2.8,2.7,2.5,2.3,2.0])

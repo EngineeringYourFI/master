@@ -57,7 +57,7 @@ def NonAdjustableIncome(TotalCash,Income,PreTax,PreTax457b,RMD, PostTax,IncDict,
 
     # Required Minimum Distributions (RMDs)
     for ct in range(len(PreTaxBal)):
-        if Age[YearCt,ct] >= 72.:
+        if Age[YearCt,ct] >= RMD['RMDstartAge'][ct]:
             # PreTax
             RMDpretax, WR = ComputeRMD(PreTaxBal[ct],Age[YearCt,ct])
             # 457b

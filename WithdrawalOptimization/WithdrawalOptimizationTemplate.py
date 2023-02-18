@@ -62,6 +62,13 @@ if Scenario1:
     # always put older person first
     CurrentAge = np.array([40,38]) # Scenario 1, MarriedFilingJointly
 
+    # If born 1950 or earlier, RMDs start at age 72
+    # If born from 1951 to 1958, RMDs start at age 73
+    # If born in 1959, a technical error in the legislation means it’s unknown if RMDs must start at age 73 or 75. Hopefully
+    # new legislation will clarify, but until then, you should probably use age 73 to be safe.
+    # If born 1960 or later, RMDs start at age 75
+    RMDstartAge = np.array([75,75], dtype=float)
+
     FilingStatus = 'MarriedFilingJointly' # 'Single' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
 
 
@@ -79,6 +86,7 @@ if Scenario2:
     MaxStandardIncome = TaxRateInfo['SingleStandardDeduction']
     SpecifiedIncomeAfterACA = TaxRateInfo['SingleStandardDeduction']+TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1]
     CurrentAge = np.array([40])
+    RMDstartAge = np.array([75], dtype=float)
     FilingStatus = 'Single' # 'MarriedFilingJointly' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
 
 # Every lot in post-tax account, to know what cap gains are on each
@@ -224,16 +232,16 @@ if not os.path.exists(OutDir):
 t0 = time.time()
 
 if TPMorTraditionalWithdrawal == 'TPM':
-    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus,
-                                  TPMwithdraw457bFirst)
+    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,NumYearsToProject, R,
+                                  FilingStatus,TPMwithdraw457bFirst)
 elif TPMorTraditionalWithdrawal == 'Traditional':
-    ProjArrays = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R,
-                                             FilingStatus)
+    ProjArrays = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,
+                                             NumYearsToProject, R,FilingStatus)
 elif TPMorTraditionalWithdrawal == 'Both':
-    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R, FilingStatus,
-                                  TPMwithdraw457bFirst)
-    ProjArraysTraditional = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,NumYearsToProject, R,
-                                             FilingStatus)
+    ProjArrays = ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,NumYearsToProject, R,
+                                  FilingStatus,TPMwithdraw457bFirst)
+    ProjArraysTraditional = ProjFinalBalanceTraditional(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,
+                                                        NumYearsToProject, R,FilingStatus)
 
 t1 = time.time()
 SimTime = t1-t0
