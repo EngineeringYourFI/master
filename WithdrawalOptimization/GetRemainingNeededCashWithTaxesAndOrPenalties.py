@@ -9,6 +9,7 @@ import copy
 import numpy as np
 from ComputeDeltaPercent import *
 from ExecuteDeltaWithdrawal import *
+from SingleNonZeroAcctBalStep import *
 
 # If unable to obtain enough cash without additional taxes or penalties, proceed with sources that WILL generate
 # additional taxes and/or penalties
@@ -68,6 +69,11 @@ def GetRemainingNeededCashWithTaxesAndOrPenalties(PreTax,PreTax457b,PostTax,Roth
         # exit while loop if out of money - if entire WithdrawalDeltaArray is zero
         if np.sum(WithdrawalDeltaArray) == 0.:
             break
+
+        # Determine if down to a single non-zero balance account, set step accordingly
+        if np.size(np.nonzero(WithdrawalDeltaArray)) == 1:
+            Step = SingleNonZeroAcctBalStep(WithdrawalDeltaArray,PostTax,Roth,PreTax457b,PreTax,YearCt,
+                                            RemainingCashNeeded,NumPeople)
 
         # Withdraw from the lowest tax+penalty delta percentage account, even if it doesn't provide full Step
         IncTotStd, TaxableSS, IncTotLTcapGains = \
