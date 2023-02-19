@@ -7,7 +7,7 @@
 
 import numpy as np
 
-# If down to a single non-zero balance account, set step accordingly
+# If down to a single non-zero balance account, set step accordingly 
 
 def SingleNonZeroAcctBalStep(WithdrawalDeltaArray,PostTax,Roth,PreTax457b,PreTax,YearCt,RemainingCashNeeded,NumPeople):
 
