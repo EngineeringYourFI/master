@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Engineering Your FI #
+# Copyright (c) 2023 Engineering Your FI #
 # This work is licensed under a Creative Commons Attribution 4.0 International License. #
 # Thus, feel free to modify/add content as desired, and repost as desired, but please provide attribution to
 # engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/)
@@ -22,7 +22,7 @@ from ComputeTaxes import ComputeTaxes
 #############################################################################################################
 # Inputs
 
-# Bring in 2022 income tax bracket info, used for inputs (modify if beyond 2022)
+# Bring in 2023 income tax bracket info, used for inputs (modify if beyond 2023)
 TaxRateInfo = TaxRateInfoInput()
 
 # Scenario 1, MarriedFilingJointly
