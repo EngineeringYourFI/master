@@ -26,7 +26,7 @@ from ComputeTaxes import ComputeTaxes
 TaxRateInfo = TaxRateInfoInput()
 
 # Scenario 1, MarriedFilingJointly
-Scenario1 = False
+Scenario1 = True
 if Scenario1:
     # Pre-tax assets initial value
     # always put older person first
@@ -39,6 +39,12 @@ if Scenario1:
     # always put older person first
     RothIV = np.array([40000.+10000.,40000.+10000.], dtype=float)
     RothContributions = np.array([20000.+10000.,20000.+10000.], dtype=float)
+    # Roth conversions from pre-tax accounts - list format, earliest to latest - leave empty if no previous conversions
+    RothConversionAmount = np.array([], dtype=float)
+    # Age at each conversion (all conversions for a single year lumped together here)
+    RothConversionAge = np.array([], dtype=float)
+    # Which person did the conversion from their pre-tax to Roth account: 'Person 1' = 0 or 'Person 2' = 1
+    RothConversionPerson = np.array([], dtype=int)
 
     # Social security - taxed different, so don't place in OtherIncomeSources
     # always put older person first
@@ -54,12 +60,25 @@ if Scenario1:
     # Maximum standard income to achieve (not LT cap gains)
     MaxStandardIncome = TaxRateInfo['MarriedFilingJointlyStandardDeduction']
 
-    # When old enough to collect SS, no longer need to worry about ACA subsidies, so set equal to top of 0% LT cap
-    # gains bracket
-    SpecifiedIncomeAfterACA = TaxRateInfo['MarriedFilingJointlyStandardDeduction'] + \
-                              TaxRateInfo['MarriedFilingJointlyIncomeBracketLTcapGainsMins'][1]
+    # Total income need to achieve, e.g. for maximizing ACA subsidies
+    # (eventually include ACA subsidy model to further optimize)
+    SpecifiedIncome = 50000.
 
-    # always put older person first
+    # # When old enough to collect SS, no longer need to worry about ACA subsidies, so set equal to top of 0% LT cap
+    # # gains bracket
+    # Legacy variable:
+    # SpecifiedIncomeAfterACA = TaxRateInfo['MarriedFilingJointlyStandardDeduction'] + \
+    #                           TaxRateInfo['MarriedFilingJointlyIncomeBracketLTcapGainsMins'][1]
+    # Use more general purpose capability to change this income value
+    SpecifiedIncomeChange = np.array([TaxRateInfo['MarriedFilingJointlyStandardDeduction'] +
+                                      TaxRateInfo['MarriedFilingJointlyIncomeBracketLTcapGainsMins'][1] -
+                                      SpecifiedIncome], dtype=float)
+    # The age of the older person when this change occurs
+    # So if the younger person is 2 years younger than the older person, set to 65 + 2, for when both people will be on
+    # medicare and no longer worried about ACA subsidies
+    AgeSpecifiedIncomeChangeWillStart = np.array([67], dtype=float)
+
+    # Always put older person first
     CurrentAge = np.array([40,38]) # Scenario 1, MarriedFilingJointly
 
     # If born 1950 or earlier, RMDs start at age 72
@@ -73,7 +92,7 @@ if Scenario1:
 
 
 # Scenario 2, Single
-Scenario2 = True
+Scenario2 = False
 if Scenario2:
     # PreTaxIV = np.array([400000.], dtype=float)
     # PreTax457bIV = np.array([100000.], dtype=float)
@@ -81,10 +100,18 @@ if Scenario2:
     PreTax457bIV = np.array([0.], dtype=float)
     RothIV = np.array([80000.+20000.], dtype=float)
     RothContributions = np.array([40000.+20000.], dtype=float)
+    RothConversionAmount = np.array([], dtype=float)
+    RothConversionAge = np.array([], dtype=float)
+    RothConversionPerson = np.array([], dtype=int)
     SocialSecurityPayments = np.array([17000], dtype=float)
     AgeSSwillStart = np.array([67], dtype=float)
     MaxStandardIncome = TaxRateInfo['SingleStandardDeduction']
-    SpecifiedIncomeAfterACA = TaxRateInfo['SingleStandardDeduction']+TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1]
+    # SpecifiedIncomeAfterACA = TaxRateInfo['SingleStandardDeduction']+TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1]
+    SpecifiedIncome = 50000.
+    SpecifiedIncomeChange = np.array([TaxRateInfo['SingleStandardDeduction'] +
+                                      TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1] - SpecifiedIncome],
+                                     dtype=float)
+    AgeSpecifiedIncomeChangeWillStart = np.array([65], dtype=float)
     CurrentAge = np.array([40])
     RMDstartAge = np.array([75], dtype=float)
     FilingStatus = 'Single' # 'MarriedFilingJointly' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
@@ -122,9 +149,6 @@ AgeOtherIncomeSourcesWillStart = np.array([], dtype=float)  # using first person
 MaxStandardIncomeChange = np.array([], dtype=float) #10000
 AgeMaxStandardIncomeChangeWillStart = np.array([], dtype=float)  # using first person in CurrentAge array #73
 
-# Income need to achieve, e.g. for maximizing ACA subsidies
-SpecifiedIncome = 50000.
-
 # Retirement Expenses - in current year dollars, as is everything else in this simulation
 Exp = 40000. 
 ExpRate = 0. # How much expenses (in current day dollars) change each year
@@ -155,7 +179,7 @@ OutputFile = 'Output.txt'
 TPMorTraditionalWithdrawal = 'TPM' #'Traditional' #'Both' #
 
 # Flag dictating whether to run TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc method or not
-# This method has not yet produces better results than not running the method - but it's available if desired
+# This method has not yet produced better results for any scenario attempted - but it's available if desired
 # And it might produce better results when an ACA premiums/subsidies model is in place
 TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag = False
 
@@ -180,14 +204,17 @@ IVdict = {'PreTaxIV': PreTaxIV,
           'LotPurchasedFirstYear': LotPurchasedFirstYear,
           'RothIV': RothIV,
           'RothContributions': RothContributions,
+          'RothConversionAmount': RothConversionAmount,
+          'RothConversionAge': RothConversionAge,
+          'RothConversionPerson': RothConversionPerson,
           'CashCushion': CashCushion,
           'TaxesGenPrevYear': TaxesGenPrevYear,
           'TaxesPaidPrevYear': TaxesPaidPrevYear,
           'PenaltiesGenPrevYear': PenaltiesGenPrevYear,
           'PenaltiesPaidPrevYear': PenaltiesPaidPrevYear}
 
-IncDict = {'QualifiedDividendYield': QualifiedDividendYield, #'CurrentAnnualQualifiedDividends': CurrentAnnualQualifiedDividends,
-           'NonQualifiedDividendYield': NonQualifiedDividendYield, #'CurrentAnnualNonQualifiedDividends': CurrentAnnualNonQualifiedDividends,
+IncDict = {'QualifiedDividendYield': QualifiedDividendYield,
+           'NonQualifiedDividendYield': NonQualifiedDividendYield,
            'SocialSecurityPayments': SocialSecurityPayments,
            'AgeSSwillStart': AgeSSwillStart,
            'OtherIncomeSources': OtherIncomeSources,
@@ -196,7 +223,8 @@ IncDict = {'QualifiedDividendYield': QualifiedDividendYield, #'CurrentAnnualQual
            'MaxStandardIncomeChange': MaxStandardIncomeChange,
            'AgeMaxStandardIncomeChangeWillStart': AgeMaxStandardIncomeChangeWillStart,
            'SpecifiedIncome': SpecifiedIncome,
-           'SpecifiedIncomeAfterACA': SpecifiedIncomeAfterACA,
+           'SpecifiedIncomeChange': SpecifiedIncomeChange,
+           'AgeSpecifiedIncomeChangeWillStart': AgeSpecifiedIncomeChangeWillStart,
            'TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag': TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag}
 
 ExpDict = {'Exp': Exp,

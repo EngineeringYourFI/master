@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Engineering Your FI #
+# Copyright (c) 2023 Engineering Your FI #
 # This work is licensed under a Creative Commons Attribution 4.0 International License. #
 # Thus, feel free to modify/add content as desired, and repost as desired, but please provide attribution to
 # engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/)
@@ -31,11 +31,9 @@ def TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc(TotalCash,PreTax,PreTax
     PreTax457bTotal = PreTax457b['Total'][YearCt]
     RothBal = Roth['Bal'][YearCt,:]
     RothTotal = Roth['Total'][YearCt]
-    RothRollAmount = Roth['RolloverAmount']
-    RothRollPerson = Roth['RolloverPerson']
-    RothRollAge = Roth['RolloverAge']
-
-    # print('Test1')
+    RothConversionAmount = Roth['ConversionAmount']
+    RothConversionPerson = Roth['ConversionPerson']
+    RothConversionAge = Roth['ConversionAge']
 
     # Only employ this method if there are PreTax/PreTax457b withdrawals to undo AND PostTax Cap Gains to use
     if (PreTaxTotalWithdrawn > 0.009 or PreTax457bTotalWithdrawn > 0.009) and PostTaxCGtotal > 0.009:
@@ -146,15 +144,15 @@ def TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc(TotalCash,PreTax,PreTax
                     PreTaxTotal += RemainingStep
                     PreTaxWithdrawn[ct] -= RemainingStep
                     PreTaxTotalWithdrawn -= RemainingStep
-                    if Age[YearCt,ct] < 60.: # Then the withdrawal was a Roth rollover, so undo that as well
+                    if Age[YearCt,ct] < 60.: # Then the withdrawal was a Roth conversion, so undo that as well
                         RothBal[ct] -= RemainingStep
                         RothTotal -= RemainingStep
-                        # Loop over Roth rollover arrays until found RothRollAge and RothRollPerson that
+                        # Loop over Roth conversion arrays until found RothConversionAge and RothConversionPerson that
                         # match this person and age - starting from end of arrays
-                        for ct2 in reversed(range(len(RothRollAmount))):
-                            if RothRollPerson[ct2] == ct and RothRollAge[ct2] == Age[YearCt,ct]:
-                                RothRollAmount[ct2] -= RemainingStep
-                    else: # then wasn't a Roth rollover, and need to undo the cash withdrawal
+                        for ct2 in reversed(range(len(RothConversionAmount))):
+                            if RothConversionPerson[ct2] == ct and RothConversionAge[ct2] == Age[YearCt,ct]:
+                                RothConversionAmount[ct2] -= RemainingStep
+                    else: # then wasn't a Roth conversion, and need to undo the cash withdrawal
                         TotalCash[YearCt] -= RemainingStep
                     # Remove from income
                     IncomeTotStd -= RemainingStep
@@ -164,15 +162,15 @@ def TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc(TotalCash,PreTax,PreTax
                     # Add back to balance
                     PreTaxBal[ct] += PreTaxWithdrawn[ct]
                     PreTaxTotal += PreTaxWithdrawn[ct]
-                    if Age[YearCt,ct] < 60.: # Then the withdrawal was a Roth rollover, so undo that as well
+                    if Age[YearCt,ct] < 60.: # Then the withdrawal was a Roth conversion, so undo that as well
                         RothBal[ct] -= PreTaxWithdrawn[ct]
                         RothTotal -= PreTaxWithdrawn[ct]
-                        # Loop over Roth rollover arrays until found RothRollAge and RothRollPerson that
+                        # Loop over Roth conversion arrays until found RothConversionAge and RothConversionPerson that
                         # match this person and age - starting from end of arrays
-                        for ct2 in reversed(range(len(RothRollAmount))):
-                            if RothRollPerson[ct2] == ct and RothRollAge[ct2] == Age[YearCt,ct]:
-                                RothRollAmount[ct2] -= PreTaxWithdrawn[ct]
-                    else: # then wasn't a Roth rollover, and need to undo the cash withdrawal
+                        for ct2 in reversed(range(len(RothConversionAmount))):
+                            if RothConversionPerson[ct2] == ct and RothConversionAge[ct2] == Age[YearCt,ct]:
+                                RothConversionAmount[ct2] -= PreTaxWithdrawn[ct]
+                    else: # then wasn't a Roth conversion, and need to undo the cash withdrawal
                         TotalCash[YearCt] -= PreTaxWithdrawn[ct]
                     # Remove from income
                     IncomeTotStd -= PreTaxWithdrawn[ct]
@@ -245,6 +243,6 @@ def TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc(TotalCash,PreTax,PreTax
     PreTax457b['Total'][YearCt] = PreTax457bTotal
     # Roth['Bal'][YearCt,:] = RothBal # mutable
     Roth['Total'][YearCt] = RothTotal
-    # Roth['RolloverAmount'] = RothRollAmount # mutable
+    # Roth['ConversionAmount'] = RothConversionAmount # mutable
 
     debug = 1

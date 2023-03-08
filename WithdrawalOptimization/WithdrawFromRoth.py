@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Engineering Your FI #
+# Copyright (c) 2023 Engineering Your FI #
 # This work is licensed under a Creative Commons Attribution 4.0 International License. #
 # Thus, feel free to modify/add content as desired, and repost as desired, but please provide attribution to
 # engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/)
@@ -12,9 +12,9 @@ def WithdrawFromRoth(Roth,TotalCash, TotalCashNeeded,Age,YearCt,PersonCt):
     # Unpack needed dictionary items - for easier access
     RothBal = Roth['Bal'][YearCt,PersonCt]
     RothContributions = Roth['Contributions'][YearCt,PersonCt]
-    RothRollAmount = Roth['RolloverAmount']
-    RothRollAge = Roth['RolloverAge']
-    RothRollPerson = Roth['RolloverPerson']
+    RothConversionAmount = Roth['ConversionAmount']
+    RothConversionAge = Roth['ConversionAge']
+    RothConversionPerson = Roth['ConversionPerson']
 
     # compute cash needed
     RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
@@ -30,7 +30,7 @@ def WithdrawFromRoth(Roth,TotalCash, TotalCashNeeded,Age,YearCt,PersonCt):
             else: # withdraw the entire balance
                 TotalCash[YearCt] += RothBal
                 RothBal = 0.
-        else: # haven't hit 60 (actually 59.5) yet, so need to avoid growth and rollovers less than 5 years old if possible
+        else: # haven't hit 60 (actually 59.5) yet, so need to avoid growth and conversions less than 5 years old if possible
             # first try to pull from original contributions
             # and to avoid a scenerio where contributions are greater than balance (e.g. if ROI is negative), use the
             # min of contributions vs bal
@@ -49,20 +49,20 @@ def WithdrawFromRoth(Roth,TotalCash, TotalCashNeeded,Age,YearCt,PersonCt):
                 # Then recompute cash needed
                 RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
 
-                # since original contributions not enough, next pull from rollovers if they were made at least 5
+                # since original contributions not enough, next pull from conversions if they were made at least 5
                 # years ago
-                # loop over all rollovers
-                for ct in range(len(RothRollAmount)):
-                    # if rollover non-zero, at least 5 years old, corresponds to this person, and still need cash:
-                    if (RothRollAmount[ct] > 0.) and (Age[YearCt,PersonCt] >= RothRollAge[ct] + 5) and \
-                            (RothRollPerson[ct] == PersonCt) and (RemainingCashNeeded > 0.):
-                        # and to avoid a scenerio where rollover is greater than balance (e.g. if ROI is negative), use
-                        # the min of rollover vs bal
-                        MinVal = min(RothRollAmount[ct],RothBal)
+                # loop over all Conversions
+                for ct in range(len(RothConversionAmount)):
+                    # if Conversion non-zero, at least 5 years old, corresponds to this person, and still need cash:
+                    if (RothConversionAmount[ct] > 0.) and (Age[YearCt,PersonCt] >= RothConversionAge[ct] + 5) and \
+                            (RothConversionPerson[ct] == PersonCt) and (RemainingCashNeeded > 0.):
+                        # and to avoid a scenerio where conversion is greater than balance (e.g. if ROI is negative), use
+                        # the min of conversion vs bal
+                        MinVal = min(RothConversionAmount[ct],RothBal)
                         # if MinVal covers entire remaining cash needed:
                         if MinVal > RemainingCashNeeded:
                             TotalCash[YearCt] += RemainingCashNeeded
-                            RothRollAmount[ct] -= RemainingCashNeeded
+                            RothConversionAmount[ct] -= RemainingCashNeeded
                             RothBal -= RemainingCashNeeded
                             # Then recompute cash needed
                             RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
@@ -70,7 +70,7 @@ def WithdrawFromRoth(Roth,TotalCash, TotalCashNeeded,Age,YearCt,PersonCt):
                             # then just withdraw MinVal
                             TotalCash[YearCt] += MinVal
                             RothBal -= MinVal
-                            RothRollAmount[ct] -= MinVal
+                            RothConversionAmount[ct] -= MinVal
                             # Then recompute cash needed
                             RemainingCashNeeded = TotalCashNeeded - TotalCash[YearCt]
 

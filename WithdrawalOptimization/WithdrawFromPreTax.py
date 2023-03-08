@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Engineering Your FI #
+# Copyright (c) 2023 Engineering Your FI #
 # This work is licensed under a Creative Commons Attribution 4.0 International License. #
 # Thus, feel free to modify/add content as desired, and repost as desired, but please provide attribution to
 # engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/)
@@ -16,22 +16,22 @@ def WithdrawFromPreTax(Income,PreTax,TotalCash,Roth, Age,YearCt,PersonCt):
     IncTot = Income['Total'][YearCt]
     IncMaxStd = Income['MaxStandard'][YearCt]
     RothBal = Roth['Bal'][YearCt,PersonCt]
-    RothRollAmount = Roth['RolloverAmount']
-    RothRollAge = Roth['RolloverAge']
-    RothRollPerson = Roth['RolloverPerson']
+    RothConversionAmount = Roth['ConversionAmount']
+    RothConversionAge = Roth['ConversionAge']
+    RothConversionPerson = Roth['ConversionPerson']
 
-    # withdraw PreTax if room, rollover to Roth if not 60 yet
+    # withdraw PreTax if room, conversion to Roth if not 60 yet
     RemainingStandardIncomeRoom = IncMaxStd - IncTotStd
     if RemainingStandardIncomeRoom > 0. and PreTaxBal > 0.:
         # if enough funds in PreTax to cover the entire remainder
         if PreTaxBal > RemainingStandardIncomeRoom:
             PreTaxBal -= RemainingStandardIncomeRoom
-            if Age[YearCt,PersonCt] < 60.: # Rollover to roth
+            if Age[YearCt,PersonCt] < 60.: # Conversion to roth
                 RothBal += RemainingStandardIncomeRoom
-                # capture rollover amount with age, to ensure not spent in less than 5 years
-                RothRollAmount = np.append(RothRollAmount,RemainingStandardIncomeRoom)
-                RothRollAge = np.append(RothRollAge,Age[YearCt,PersonCt])
-                RothRollPerson = np.append(RothRollPerson,PersonCt)
+                # capture conversion amount with age, to ensure not spent in less than 5 years
+                RothConversionAmount = np.append(RothConversionAmount,RemainingStandardIncomeRoom)
+                RothConversionAge = np.append(RothConversionAge,Age[YearCt,PersonCt])
+                RothConversionPerson = np.append(RothConversionPerson,PersonCt)
             else: # use the cash - no penalties
                 TotalCash[YearCt] += RemainingStandardIncomeRoom
 
@@ -39,12 +39,12 @@ def WithdrawFromPreTax(Income,PreTax,TotalCash,Roth, Age,YearCt,PersonCt):
             IncTotStd += RemainingStandardIncomeRoom
             IncTot += RemainingStandardIncomeRoom
         else: # withdraw remaining balance
-            if Age[YearCt,PersonCt] < 60.: # Rollover to roth
+            if Age[YearCt,PersonCt] < 60.: # Conversion to roth
                 RothBal += PreTaxBal
-                # capture rollover amount with age, to ensure not spent in less than 5 years
-                RothRollAmount = np.append(RothRollAmount,PreTaxBal)
-                RothRollAge = np.append(RothRollAge,Age[YearCt,PersonCt])
-                RothRollPerson = np.append(RothRollPerson,PersonCt)
+                # capture conversion amount with age, to ensure not spent in less than 5 years
+                RothConversionAmount = np.append(RothConversionAmount,PreTaxBal)
+                RothConversionAge = np.append(RothConversionAge,Age[YearCt,PersonCt])
+                RothConversionPerson = np.append(RothConversionPerson,PersonCt)
             else: # use the cash - no penalties
                 TotalCash[YearCt] += PreTaxBal
 
@@ -59,9 +59,8 @@ def WithdrawFromPreTax(Income,PreTax,TotalCash,Roth, Age,YearCt,PersonCt):
     Income['TotalStandard'][YearCt] = IncTotStd
     Income['Total'][YearCt] = IncTot
     Roth['Bal'][YearCt,PersonCt] = RothBal
-    # unfortunately have to repack RothRoll arrays, because they are numpy arrays, and the np.append operation creates a
+    # unfortunately have to repack RothConversion arrays, because they are numpy arrays, and the np.append operation creates a
     # new array instead of appending in place (unlike a python list, which does - consider switching to Python lists)
-    Roth['RolloverAmount'] = RothRollAmount
-    Roth['RolloverAge'] = RothRollAge
-    Roth['RolloverPerson'] = RothRollPerson
-
+    Roth['ConversionAmount'] = RothConversionAmount
+    Roth['ConversionAge'] = RothConversionAge
+    Roth['ConversionPerson'] = RothConversionPerson

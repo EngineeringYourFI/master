@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Engineering Your FI #
+# Copyright (c) 2023 Engineering Your FI #
 # This work is licensed under a Creative Commons Attribution 4.0 International License. #
 # Thus, feel free to modify/add content as desired, and repost as desired, but please provide attribution to
 # engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/)
@@ -48,10 +48,10 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
                'CGtotal': np.zeros(NumYearsToProject)}
     Roth = {'Bal': np.zeros((NumYearsToProject,NumPeople)),
             'Total': np.zeros(NumYearsToProject),
-            'Contributions': np.zeros((NumYearsToProject,NumPeople)),
-            'RolloverAmount': np.array([], dtype=float),
-            'RolloverAge': np.array([], dtype=float), # the age of the person's account the rollover is done on
-            'RolloverPerson': np.array([], dtype=int)} # person who does the rollover (0 = 1st person, 1 = 2nd person)
+            'Contributions': np.zeros((NumYearsToProject,NumPeople))}
+            # 'ConversionAmount': np.array([], dtype=float),
+            # 'ConversionAge': np.array([], dtype=float), # the age of the person's account the conversion is done on
+            # 'ConversionPerson': np.array([], dtype=int)} # person who does the conversion (0 = 1st person, 1 = 2nd person)
     CashCushion = np.zeros(NumYearsToProject)
     TotalAssets = np.zeros(NumYearsToProject)
 
@@ -61,6 +61,9 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
     PostTax['CG'][0,:] = IVdict['CurrentUnrealizedCapGains']
     Roth['Bal'][0,:] = IVdict['RothIV']
     Roth['Contributions'][0,:] = IVdict['RothContributions']
+    Roth['ConversionAmount'] = IVdict['RothConversionAmount']
+    Roth['ConversionAge'] = IVdict['RothConversionAge'] # the age of the person's account the conversion is done on
+    Roth['ConversionPerson'] = IVdict['RothConversionPerson'] # person who does the conversion (0 = 1st person, 1 = 2nd person)
     CashCushion[0] = IVdict['CashCushion']
 
     # Initialize Yearly values
@@ -78,6 +81,7 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
     Age = np.zeros((NumYearsToProject,np.size(CurrentAge)))
     Age[0,:] = CurrentAge
     TotalCash = np.zeros(NumYearsToProject)
+    TotalCashNeeded = np.zeros(NumYearsToProject)
     Expenses = np.zeros(NumYearsToProject)
     Taxes = np.zeros(NumYearsToProject)
     TaxesGenPrevYear = np.zeros(NumYearsToProject)
@@ -169,15 +173,19 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
         EstimatedPenaltiesPaidThisYear[ct1] = 0. #PenaltiesGenPrevYear[ct1]
 
         # Compute cash needed this year
-        TotalCashNeeded = Expenses[ct1] + TaxesStillOwed + PenaltiesStillOwed + EstimatedTaxesPaidThisYear[ct1] + \
-                          EstimatedPenaltiesPaidThisYear[ct1]
+        TotalCashNeeded[ct1] = Expenses[ct1] + TaxesStillOwed + PenaltiesStillOwed + EstimatedTaxesPaidThisYear[ct1] + \
+                               EstimatedPenaltiesPaidThisYear[ct1]
 
         # Income
 
-        if np.all(Age[ct1,:] >= 65.):
-            Income['MaxTotal'][ct1] = IncDict['SpecifiedIncomeAfterACA']
-        else:
-            Income['MaxTotal'][ct1] = IncDict['SpecifiedIncome']
+        # if np.all(Age[ct1,:] >= 65.):
+        #     Income['MaxTotal'][ct1] = IncDict['SpecifiedIncomeAfterACA']
+        # else:
+        #     Income['MaxTotal'][ct1] = IncDict['SpecifiedIncome']
+        Income['MaxTotal'][ct1] = IncDict['SpecifiedIncome']
+        for ct2 in range(len(IncDict['SpecifiedIncomeChange'])):
+            if Age[ct1,0] >= IncDict['AgeSpecifiedIncomeChangeWillStart'][ct2]:
+                Income['MaxTotal'][ct1] += IncDict['SpecifiedIncomeChange'][ct2]
 
         Income['MaxStandard'][ct1] = IncDict['MaxStandardIncome']
         for ct2 in range(len(IncDict['MaxStandardIncomeChange'])):
@@ -218,7 +226,7 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
         WithdrawFromAllPreTax(PreTax,PreTax457b,Income,TotalCash,Roth, Age,ct1)
 
         # Withdraw from post-tax lots
-        WithdrawFromPostTax(PostTax,TotalCash,Income, TotalCashNeeded,IVdict,ct1)
+        WithdrawFromPostTax(PostTax,TotalCash,Income, TotalCashNeeded[ct1],IVdict,ct1)
 
         # Compute TaxableSS, based on income from WithdrawFromAllPreTax and WithdrawFromPostTax
         if Income['TotalSS'][ct1] > 0.:
@@ -233,27 +241,27 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
         TaxesDict = ComputeTaxes(TaxRateInfo,FilingStatus,Income['TotalStandard'][ct1],Income['TotalLTcapGains'][ct1])
         Taxes[ct1] = TaxesDict['Total']
 
-        if TotalCash[ct1] < TotalCashNeeded:
+        if TotalCash[ct1] < TotalCashNeeded[ct1]:
             # Get cash with no taxes or penalties to meet TotalCashNeeded, if needed
-            GetRemainingNeededCashNoTaxesOrPenalties(TotalCash,Roth,CashCushion, TotalCashNeeded,Age,ct1)
+            GetRemainingNeededCashNoTaxesOrPenalties(TotalCash,Roth,CashCushion, TotalCashNeeded[ct1],Age,ct1)
 
         if IncDict['TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag']:
-            if TotalCash[ct1] < TotalCashNeeded:
+            if TotalCash[ct1] < TotalCashNeeded[ct1]:
                 # Try reducing standard income & increasing LT cap gains by same amount to get more cash, if possible
                 TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc(TotalCash,PreTax,PreTax457b,PostTax,Roth,Income,
-                                                                     Taxes, Age,TotalCashNeeded,ct1,TaxRateInfo,
+                                                                     Taxes, Age,TotalCashNeeded[ct1],ct1,TaxRateInfo,
                                                                      FilingStatus)
 
 
-        if TotalCash[ct1] < TotalCashNeeded:
+        if TotalCash[ct1] < TotalCashNeeded[ct1]:
             # If unable to obtain enough cash without additional taxes or penalties, proceed with sources that WILL
             # generate additional taxes and/or penalties
             GetRemainingNeededCashWithTaxesAndOrPenalties(PreTax,PreTax457b,PostTax,Roth,Income,TotalCash,Taxes,
-                                                          Penalties,IVdict,TaxRateInfo,FilingStatus,TotalCashNeeded,Age,
+                                                          Penalties,IVdict,TaxRateInfo,FilingStatus,TotalCashNeeded[ct1],Age,
                                                           ct1)
 
         # if TotalCash still less than TotalCashNeeded, you've run out of money!
-        if TotalCashNeeded - TotalCash[ct1] >= 0.01:
+        if TotalCashNeeded[ct1] - TotalCash[ct1] >= 0.01:
             print('Ran out of money!')
             print('Age = '+str(Age[ct1,0]))
             OutOfMoneyAge = Age[ct1,0]
@@ -262,7 +270,7 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
         # After obtaining cash needed:
 
         # if ExcessCash > 0, need to reinvest
-        ExcessCash = TotalCash[ct1] - TotalCashNeeded
+        ExcessCash = TotalCash[ct1] - TotalCashNeeded[ct1]
         if ExcessCash >= 0.01:
             # put remainder of cash into new lot (column) within PostTax since purchasing a new lot
             NewLot = np.zeros((np.shape(PostTax['Bal'])[0],1))
@@ -290,6 +298,10 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
                   'PostTaxCG': PostTax['CG'],
                   'Roth': Roth['Bal'],
                   'RothTotal': Roth['Total'],
+                  'RothContributions': Roth['Contributions'],
+                  'RothConversionAmount': Roth['ConversionAmount'],
+                  'RothConversionAge': Roth['ConversionAge'],
+                  'RothConversionPerson': Roth['ConversionPerson'],
                   'CashCushion': CashCushion,
                   'PostTaxTotal': PostTax['Total'],
                   'CapGainsTotal': PostTax['CGtotal'],
@@ -297,6 +309,7 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
                   'Age': Age,
                   'OutOfMoneyAge': OutOfMoneyAge,
                   'TotalCash': TotalCash,
+                  'TotalCashNeeded': TotalCashNeeded,
                   'TotalStandardIncome': Income['TotalStandard'],
                   'TotalLTcapGainsIncome': Income['TotalLTcapGains'],
                   'TotalSSincome': Income['TotalSS'],
@@ -305,6 +318,7 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
                   'SpecifiedIncome': Income['MaxTotal'],
                   'Taxes': Taxes,
                   'Penalties': Penalties,
+                  'RMD': RMD['Bal'],
                   'RMDtotal': RMD['Total']}
 
     return ProjArrays
