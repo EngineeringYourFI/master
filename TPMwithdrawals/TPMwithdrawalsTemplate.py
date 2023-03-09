@@ -135,11 +135,6 @@ PenaltiesGenPrevYear = 0.
 TaxesPaidPrevYear = 0.
 PenaltiesPaidPrevYear = 0.
 
-# Output Directory
-OutDir = './'
-# Output file
-OutputFile = 'Output.txt'
-
 # Flag dictating whether to run TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc method or not
 # This method has not yet produced better results for any scenario attempted - but it's available if desired
 # And it might produce better results when an ACA premiums/subsidies model is in place
@@ -152,6 +147,13 @@ TPMwithdraw457bFirst = True
 
 # Output extra information about the withdrawals, income, etc.
 VerboseMode = True
+
+# Output Directory
+OutDir = './'
+# Output file
+OutputFile = 'Output.txt'
+# Output to screen instead of file:
+OutputToScreen = True
 
 #############################################################################################################
 
@@ -324,8 +326,8 @@ OutputDict = ComputeOutputs(ProjArrays,IVdict,FilingStatus,IncDict)
 # Print relevant outputs to output file
 
 # WritePrimaryOutput(OutputFile,ProjArrays,IVdict,FilingStatus,IncDict)
-WritePrimaryOutput(OutputFile,OutputDict,FilingStatus)
+WritePrimaryOutput(OutputFile,OutputDict,FilingStatus,OutputToScreen)
 
 if VerboseMode:
-    AppendVerboseOutput(OutputFile,OutputDict,FilingStatus)
+    AppendVerboseOutput(OutputFile,OutputDict,FilingStatus,OutputToScreen)
 

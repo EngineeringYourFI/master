@@ -6,8 +6,9 @@
 # AppendVerboseOutput.py
 
 import numpy as np
+import sys
 
-def AppendVerboseOutput(OutputFile,OutputDict,FilingStatus):
+def AppendVerboseOutput(OutputFile,OutputDict,FilingStatus,OutputToScreen):
 
     # Unpack OutputDict
     PreTaxIV = OutputDict['PreTaxIV']
@@ -65,126 +66,131 @@ def AppendVerboseOutput(OutputFile,OutputDict,FilingStatus):
 
     RMD = OutputDict['RMD']
 
-
+    # Saving the reference of the standard output
+    original_stdout = sys.stdout
 
     file=open(OutputFile,'a')
+    if OutputToScreen == False: # then output to file
+        sys.stdout = file
 
-    file.write('\n\n')
-    file.write('*** Additional Details, Verbose Mode ***\n\n')
+    # Use print instead of file.write, and also remove one \n, since print includes a single line break after already
 
-    file.write('Tax-advantaged Account Balances And Withdrawals:\n\n')
+    print('\n')
+    print('*** Additional Details, Verbose Mode ***\n')
+
+    print('Tax-advantaged Account Balances And Withdrawals:\n')
 
     if FilingStatus == 'MarriedFilingJointly': # two people
 
-        file.write('PreTax (Traditional IRA, 401(k), 403(b)) Withdrawals\n')
-        file.write('Person 1 Initial Balance: $'+'{:.2f}'.format(PreTaxIV[0])+'\n')
-        file.write('Person 1 Final Balance: $'+'{:.2f}'.format(PreTaxFinalBal[0])+'\n')
-        file.write('Person 1 Withdrawal: $'+'{:.2f}'.format(PreTaxWithdrawal[0])+'\n')
-        file.write('Person 2 Initial Balance: $'+'{:.2f}'.format(PreTaxIV[1])+'\n')
-        file.write('Person 2 Final Balance: $'+'{:.2f}'.format(PreTaxFinalBal[1])+'\n')
-        file.write('Person 2 Withdrawal: $'+'{:.2f}'.format(PreTaxWithdrawal[1])+'\n')
-        file.write('Total Withdrawal for Both People: $'+'{:.2f}'.format(PreTaxTotalWithdrawal)+'\n')
+        print('PreTax (Traditional IRA, 401(k), 403(b)) Withdrawals')
+        print('Person 1 Initial Balance: $'+'{:.2f}'.format(PreTaxIV[0])+'')
+        print('Person 1 Final Balance: $'+'{:.2f}'.format(PreTaxFinalBal[0])+'')
+        print('Person 1 Withdrawal: $'+'{:.2f}'.format(PreTaxWithdrawal[0])+'')
+        print('Person 2 Initial Balance: $'+'{:.2f}'.format(PreTaxIV[1])+'')
+        print('Person 2 Final Balance: $'+'{:.2f}'.format(PreTaxFinalBal[1])+'')
+        print('Person 2 Withdrawal: $'+'{:.2f}'.format(PreTaxWithdrawal[1])+'')
+        print('Total Withdrawal for Both People: $'+'{:.2f}'.format(PreTaxTotalWithdrawal)+'')
 
         if np.sum(PreTax457bIV) > 0.: # only output 457(b) if non-zero start (many people won't have 457(b))
-            file.write('\n')
-            file.write('457(b) Withdrawals\n')
-            file.write('Person 1 Initial Balance: $'+'{:.2f}'.format(PreTax457bIV[0])+'\n')
-            file.write('Person 1 Final Balance: $'+'{:.2f}'.format(PreTax457bFinalBal[0])+'\n')
-            file.write('Person 1 Withdrawal: $'+'{:.2f}'.format(PreTax457bWithdrawal[0])+'\n')
-            file.write('Person 2 Initial Balance: $'+'{:.2f}'.format(PreTax457bIV[1])+'\n')
-            file.write('Person 2 Final Balance: $'+'{:.2f}'.format(PreTax457bFinalBal[1])+'\n')
-            file.write('Person 2 Withdrawal: $'+'{:.2f}'.format(PreTax457bWithdrawal[1])+'\n')
-            file.write('Total Withdrawal for Both People: $'+'{:.2f}'.format(PreTax457bTotalWithdrawal)+'\n')
+            print('')
+            print('457(b) Withdrawals')
+            print('Person 1 Initial Balance: $'+'{:.2f}'.format(PreTax457bIV[0])+'')
+            print('Person 1 Final Balance: $'+'{:.2f}'.format(PreTax457bFinalBal[0])+'')
+            print('Person 1 Withdrawal: $'+'{:.2f}'.format(PreTax457bWithdrawal[0])+'')
+            print('Person 2 Initial Balance: $'+'{:.2f}'.format(PreTax457bIV[1])+'')
+            print('Person 2 Final Balance: $'+'{:.2f}'.format(PreTax457bFinalBal[1])+'')
+            print('Person 2 Withdrawal: $'+'{:.2f}'.format(PreTax457bWithdrawal[1])+'')
+            print('Total Withdrawal for Both People: $'+'{:.2f}'.format(PreTax457bTotalWithdrawal)+'')
 
-        file.write('\n')
-        file.write('Roth IRA Withdrawals\n')
-        file.write('Person 1 Initial Balance: $'+'{:.2f}'.format(RothIV[0])+'\n')
-        file.write('Person 1 Final Balance: $'+'{:.2f}'.format(RothFinalBal[0])+'\n')
-        file.write('Person 1 Withdrawal: $'+'{:.2f}'.format(RothWithdrawal[0])+'\n')
-        file.write('Person 2 Initial Balance: $'+'{:.2f}'.format(RothIV[1])+'\n')
-        file.write('Person 2 Final Balance: $'+'{:.2f}'.format(RothFinalBal[1])+'\n')
-        file.write('Person 2 Withdrawal: $'+'{:.2f}'.format(RothWithdrawal[1])+'\n')
-        file.write('Total Withdrawal for Both People: $'+'{:.2f}'.format(RothTotalWithdrawal)+'\n')
+        print('')
+        print('Roth IRA Withdrawals')
+        print('Person 1 Initial Balance: $'+'{:.2f}'.format(RothIV[0])+'')
+        print('Person 1 Final Balance: $'+'{:.2f}'.format(RothFinalBal[0])+'')
+        print('Person 1 Withdrawal: $'+'{:.2f}'.format(RothWithdrawal[0])+'')
+        print('Person 2 Initial Balance: $'+'{:.2f}'.format(RothIV[1])+'')
+        print('Person 2 Final Balance: $'+'{:.2f}'.format(RothFinalBal[1])+'')
+        print('Person 2 Withdrawal: $'+'{:.2f}'.format(RothWithdrawal[1])+'')
+        print('Total Withdrawal for Both People: $'+'{:.2f}'.format(RothTotalWithdrawal)+'')
 
     else: # 1 person
-        file.write('PreTax (Traditional IRA, 401(k), 403(b)) Withdrawals\n')
-        file.write('Initial Balance: $'+'{:.2f}'.format(PreTaxIV[0])+'\n')
-        file.write('Final Balance: $'+'{:.2f}'.format(PreTaxFinalBal[0])+'\n')
-        file.write('Total Withdrawal: $'+'{:.2f}'.format(PreTaxTotalWithdrawal)+'\n')
+        print('PreTax (Traditional IRA, 401(k), 403(b)) Withdrawals')
+        print('Initial Balance: $'+'{:.2f}'.format(PreTaxIV[0])+'')
+        print('Final Balance: $'+'{:.2f}'.format(PreTaxFinalBal[0])+'')
+        print('Total Withdrawal: $'+'{:.2f}'.format(PreTaxTotalWithdrawal)+'')
 
         if np.sum(PreTax457bIV) > 0.: # only output 457(b) if non-zero start (many people won't have 457(b))
-            file.write('\n')
-            file.write('457(b) Withdrawals\n')
-            file.write('Initial Balance: $'+'{:.2f}'.format(PreTax457bIV[0])+'\n')
-            file.write('Final Balance: $'+'{:.2f}'.format(PreTax457bFinalBal[0])+'\n')
-            file.write('Total Withdrawal: $'+'{:.2f}'.format(PreTax457bTotalWithdrawal)+'\n')
+            print('')
+            print('457(b) Withdrawals')
+            print('Initial Balance: $'+'{:.2f}'.format(PreTax457bIV[0])+'')
+            print('Final Balance: $'+'{:.2f}'.format(PreTax457bFinalBal[0])+'')
+            print('Total Withdrawal: $'+'{:.2f}'.format(PreTax457bTotalWithdrawal)+'')
 
-        file.write('\n')
-        file.write('Roth IRA Withdrawals\n')
-        file.write('Initial Balance: $'+'{:.2f}'.format(RothIV[0])+'\n')
-        file.write('Final Balance: $'+'{:.2f}'.format(RothFinalBal[0])+'\n')
-        file.write('Total Withdrawal: $'+'{:.2f}'.format(RothTotalWithdrawal)+'\n')
+        print('')
+        print('Roth IRA Withdrawals')
+        print('Initial Balance: $'+'{:.2f}'.format(RothIV[0])+'')
+        print('Final Balance: $'+'{:.2f}'.format(RothFinalBal[0])+'')
+        print('Total Withdrawal: $'+'{:.2f}'.format(RothTotalWithdrawal)+'')
 
 
-    file.write('\n')
-    file.write('Cash Account Balances And Withdrawal\n')
-    file.write('Initial Balance: $'+'{:.2f}'.format(CashIV)+'\n')
-    file.write('Final Balance: $'+'{:.2f}'.format(CashFinalBal)+'\n')
-    file.write('Withdrawal: $'+'{:.2f}'.format(CashWithdrawal)+'\n')
+    print('')
+    print('Cash Account Balances And Withdrawal')
+    print('Initial Balance: $'+'{:.2f}'.format(CashIV)+'')
+    print('Final Balance: $'+'{:.2f}'.format(CashFinalBal)+'')
+    print('Withdrawal: $'+'{:.2f}'.format(CashWithdrawal)+'')
 
-    file.write('\n')
-    file.write('Taxable Account Balances And Withdrawals\n')
-    file.write('Initial Balance For Each Lot:\n')
+    print('')
+    print('Taxable Account Balances And Withdrawals')
+    print('Initial Balance For Each Lot:')
     for ct in range(len(PostTaxIV)):
         if ct == len(PostTaxIV)-1:
-            file.write('{:>10}\n'.format('${:.2f}'.format(PostTaxIV[ct])))
+            print('{:>10}'.format('${:.2f}'.format(PostTaxIV[ct])))
         else:
-            file.write('{:>10}, '.format('${:.2f}'.format(PostTaxIV[ct])))
-    file.write('Final Balance For Each Lot:\n')
+            print('{:>10}, '.format('${:.2f}'.format(PostTaxIV[ct])), end = '')
+    print('Final Balance For Each Lot:')
     for ct in range(len(PostTaxFinalBal)):
         if ct == len(PostTaxFinalBal)-1:
-            file.write('{:>10}\n'.format('${:.2f}'.format(PostTaxFinalBal[ct])))
+            print('{:>10}'.format('${:.2f}'.format(PostTaxFinalBal[ct])))
         else:
-            file.write('{:>10}, '.format('${:.2f}'.format(PostTaxFinalBal[ct])))
+            print('{:>10}, '.format('${:.2f}'.format(PostTaxFinalBal[ct])), end = '')
     PostTaxIVtotalBal = np.sum(PostTaxIV)
-    file.write('Initial Total Balance: $'+'{:.2f}'.format(PostTaxIVtotalBal)+'\n')
+    print('Initial Total Balance: $'+'{:.2f}'.format(PostTaxIVtotalBal)+'')
     PostTaxTotalBalanceAfterWithdrawal = np.sum(PostTaxFinalBal[0:len(PostTaxIV)])
-    file.write('Total balance after withdrawal: $'+'{:.2f}'.format(PostTaxTotalBalanceAfterWithdrawal)+'\n')
+    print('Total balance after withdrawal: $'+'{:.2f}'.format(PostTaxTotalBalanceAfterWithdrawal)+'')
     PostTaxTotalWithdrawal = PostTaxIVtotalBal - PostTaxTotalBalanceAfterWithdrawal
-    file.write('Total Withdrawal: $'+'{:.2f}'.format(PostTaxTotalWithdrawal)+'\n')
+    print('Total Withdrawal: $'+'{:.2f}'.format(PostTaxTotalWithdrawal)+'')
     PostTaxTotalBalanceAfterWithdrawalAndInvestingExcessCash = np.sum(PostTaxFinalBal[:])
     ExcessCashGenerated = PostTaxTotalBalanceAfterWithdrawalAndInvestingExcessCash - PostTaxTotalBalanceAfterWithdrawal
-    file.write('Excess Cash Generated: $'+'{:.2f}'.format(ExcessCashGenerated)+'\n')
-    file.write('Final Total Balance (after investing excess cash): $'+'{:.2f}'.format(
-        PostTaxTotalBalanceAfterWithdrawalAndInvestingExcessCash)+'\n')
+    print('Excess Cash Generated: $'+'{:.2f}'.format(ExcessCashGenerated)+'')
+    print('Final Total Balance (after investing excess cash): $'+'{:.2f}'.format(
+        PostTaxTotalBalanceAfterWithdrawalAndInvestingExcessCash)+'')
 
-    file.write('\n')
-    file.write('Taxable Account Capital Gains\n')
-    file.write('Initial Cap Gains For Each Lot:\n')
+    print('')
+    print('Taxable Account Capital Gains')
+    print('Initial Cap Gains For Each Lot:')
     for ct in range(len(PostTaxIVCG)):
         if ct == len(PostTaxIVCG)-1:
-            file.write('{:>10}\n'.format('${:.2f}'.format(PostTaxIVCG[ct])))
+            print('{:>10}'.format('${:.2f}'.format(PostTaxIVCG[ct])))
         else:
-            file.write('{:>10}, '.format('${:.2f}'.format(PostTaxIVCG[ct])))
-    file.write('Final Cap Gains For Each Lot:\n')
+            print('{:>10}, '.format('${:.2f}'.format(PostTaxIVCG[ct])), end = '')
+    print('Final Cap Gains For Each Lot:')
     for ct in range(len(PostTaxFinalCG)):
         if ct == len(PostTaxFinalCG)-1:
-            file.write('{:>10}\n'.format('${:.2f}'.format(PostTaxFinalCG[ct])))
+            print('{:>10}'.format('${:.2f}'.format(PostTaxFinalCG[ct])))
         else:
-            file.write('{:>10}, '.format('${:.2f}'.format(PostTaxFinalCG[ct])))
+            print('{:>10}, '.format('${:.2f}'.format(PostTaxFinalCG[ct])), end = '')
     PostTaxIVCGtotal = np.sum(PostTaxIVCG)
-    file.write('Initial Total Cap Gains: $'+'{:.2f}'.format(PostTaxIVCGtotal)+'\n')
-    file.write('Final Total Cap Gains: $'+'{:.2f}'.format(PostTaxFinalCGtotal)+'\n')
-    file.write('Change in Total Cap Gains: $'+'{:.2f}'.format(PostTaxIVCGtotal - PostTaxFinalCGtotal)+'\n')
-    file.write('Note: change in total cap gains can be smaller than total cap gain income (see above) due to qualified '
-               'dividend income that counts as long term cap gains for taxation purposes.\n')
+    print('Initial Total Cap Gains: $'+'{:.2f}'.format(PostTaxIVCGtotal)+'')
+    print('Final Total Cap Gains: $'+'{:.2f}'.format(PostTaxFinalCGtotal)+'')
+    print('Change in Total Cap Gains: $'+'{:.2f}'.format(PostTaxIVCGtotal - PostTaxFinalCGtotal)+'')
+    print('Note: change in total cap gains can be smaller than total cap gain income (see above) due to qualified '
+               'dividend income that counts as long term cap gains for taxation purposes.')
 
-    file.write('\n')
-    file.write('Total Asset Balances And Withdrawal\n')
-    file.write('Initial Balance: $'+'{:.2f}'.format(TotalIV)+'\n')
-    file.write('Final Balance: $'+'{:.2f}'.format(TotalFinalBal)+'\n')
-    file.write('Change in Balance: $'+'{:.2f}'.format(TotalIV - TotalFinalBal)+'\n')
-    file.write('Note: change in balance can be smaller than Total Cash Needed (see above) due to income sources such'+
+    print('')
+    print('Total Asset Balances And Withdrawal')
+    print('Initial Balance: $'+'{:.2f}'.format(TotalIV)+'')
+    print('Final Balance: $'+'{:.2f}'.format(TotalFinalBal)+'')
+    print('Change in Balance: $'+'{:.2f}'.format(TotalIV - TotalFinalBal)+'')
+    print('Note: change in balance can be smaller than Total Cash Needed (see above) due to income sources such'+
                ' as dividends or other "non-adjustable" income streams.')
 
     file.close()
