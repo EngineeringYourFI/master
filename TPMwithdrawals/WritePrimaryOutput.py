@@ -233,13 +233,13 @@ def WritePrimaryOutput(OutputFile,OutputDict,FilingStatus):
     file.write('*** Income and Cash Goals ***\n\n')
 
     file.write('Your standard income goal is $'+'{:.2f}'.format(StdIncomeGoal)+
-               ', and the above actions acheive $'+'{:.2f}'.format(StdIncomeAchieved)+
+               ', and the above actions achieve $'+'{:.2f}'.format(StdIncomeAchieved)+
                ' ('+'{:.2f}'.format(StdIncomeAchieved/StdIncomeGoal*100.)+'%) of that goal\n\n')
     file.write('Your long term capital gains income goal is $'+'{:.2f}'.format(LTCGincomeGoal)+
-               ', and the above actions acheive $'+'{:.2f}'.format(LTCGincomeAchieved)+
+               ', and the above actions achieve $'+'{:.2f}'.format(LTCGincomeAchieved)+
                ' ('+'{:.2f}'.format(LTCGincomeAchieved/LTCGincomeGoal*100.)+'%) of that goal\n\n')
     file.write('Your total income goal is $'+'{:.2f}'.format(TotalIncomeGoal)+
-               ', and the above actions acheive $'+'{:.2f}'.format(TotalIncomeAchieved)+
+               ', and the above actions achieve $'+'{:.2f}'.format(TotalIncomeAchieved)+
                ' ('+'{:.2f}'.format(TotalIncomeAchieved/TotalIncomeGoal*100.)+'%) of that goal\n\n')
 
     file.write('Your total needed cash (living expenses + taxes owed from last year + penalties owed from last year '+
