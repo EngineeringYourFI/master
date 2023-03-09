@@ -186,7 +186,7 @@ def WritePrimaryOutput(OutputFile,OutputDict,FilingStatus):
     file.write('* Pay $'+'{:.2f}'.format(EstimatedTaxesToPayThisYear)+' in estimated taxes to the IRS this year\n')
     file.write('Note: split total estimated taxes into the four required payments in April, June, Sept, and the' +
                ' following Jan\n')
-    file.write('Note: any mandatory 20% withdholding on 401(k)/403(b)/457(b) withdrawals counts towards estimated ' +
+    file.write('Note: any mandatory 20% withholding on 401(k)/403(b)/457(b) withdrawals counts towards estimated ' +
                'tax payment\n\n')
     if TaxesStillOwed > 0.:
         file.write('* Pay the IRS $'+'{:.2f}'.format(TaxesStillOwed)+' in owed taxes from last year when you file in ' +
