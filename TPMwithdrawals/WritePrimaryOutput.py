@@ -229,7 +229,7 @@ def WritePrimaryOutput(OutputFile,OutputDict,FilingStatus):
     file.write('Total withdrawals across all accounts: $'+'{:.2f}'.format(TotalWithdrawalAcrossAllAccounts)+'\n\n')
 
 
-    file.write('\n\n')
+    file.write('\n')
     file.write('*** Income and Cash Goals ***\n\n')
 
     file.write('Your standard income goal is $'+'{:.2f}'.format(StdIncomeGoal)+
