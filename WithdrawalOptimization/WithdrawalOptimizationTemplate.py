@@ -25,9 +25,10 @@ from ComputeTaxes import ComputeTaxes
 # Bring in 2023 income tax bracket info, used for inputs (modify if beyond 2023)
 TaxRateInfo = TaxRateInfoInput()
 
-# Scenario 1, MarriedFilingJointly
-Scenario1 = True
-if Scenario1:
+# Scenario = 'MarriedFilingJointly'
+Scenario = 'Single'
+
+if Scenario == 'MarriedFilingJointly':
     # Pre-tax assets initial value
     # always put older person first
     PreTaxIV = np.array([200000.,200000.], dtype=float)
@@ -90,14 +91,23 @@ if Scenario1:
 
     FilingStatus = 'MarriedFilingJointly' # 'Single' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
 
+    # In case SpecifiedIncome (total income goal) is not acheived, or must be exceeded to acheive total cash needed, you
+    # can provide values that will allow you to compute the change in ACA health insurance subsidies. That will then be
+    # added to the Taxes total (positive or negative) for that year, because that will change how much you owe/are
+    # refunded the next year
+    AdjustTaxBillIfIncomeForACAsubsidiesNotMet = True
+    ExpectedIncomeForACAsubsidies = 50000. # nominally the same as SpecifiedIncome
+    NumPeopleOnACA = 4
+    # Annual cost of benchmark plan (second-cheapest Silver level plan in your area and for your situation)
+    BenchmarkPrice = 1458.76*12.
+    Residence = 'Contiguous' #'Alaska' #'Hawaii' #
 
-# Scenario 2, Single
-Scenario2 = False
-if Scenario2:
-    # PreTaxIV = np.array([400000.], dtype=float)
-    # PreTax457bIV = np.array([100000.], dtype=float)
-    PreTaxIV = np.array([400000.+100000.], dtype=float)
-    PreTax457bIV = np.array([0.], dtype=float)
+
+if Scenario == 'Single':
+    PreTaxIV = np.array([400000.], dtype=float)
+    PreTax457bIV = np.array([100000.], dtype=float)
+    # PreTaxIV = np.array([400000.+100000.], dtype=float)
+    # PreTax457bIV = np.array([0.], dtype=float)
     RothIV = np.array([80000.+20000.], dtype=float)
     RothContributions = np.array([40000.+20000.], dtype=float)
     RothConversionAmount = np.array([], dtype=float)
@@ -107,7 +117,7 @@ if Scenario2:
     AgeSSwillStart = np.array([67], dtype=float)
     MaxStandardIncome = TaxRateInfo['SingleStandardDeduction']
     # SpecifiedIncomeAfterACA = TaxRateInfo['SingleStandardDeduction']+TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1]
-    SpecifiedIncome = 50000.
+    SpecifiedIncome = 40000.
     SpecifiedIncomeChange = np.array([TaxRateInfo['SingleStandardDeduction'] +
                                       TaxRateInfo['SingleIncomeBracketLTcapGainsMins'][1] - SpecifiedIncome],
                                      dtype=float)
@@ -115,6 +125,11 @@ if Scenario2:
     CurrentAge = np.array([40])
     RMDstartAge = np.array([75], dtype=float)
     FilingStatus = 'Single' # 'MarriedFilingJointly' # 'HeadOfHousehold' # 'MarriedFilingSeparately' # 'QualifyingWidow(er)'
+    AdjustTaxBillIfIncomeForACAsubsidiesNotMet = True #False #
+    ExpectedIncomeForACAsubsidies = 40000. #50000.
+    NumPeopleOnACA = 1
+    BenchmarkPrice = 454.*12.
+    Residence = 'Contiguous' #'Alaska' #'Hawaii' #
 
 # Every lot in post-tax account, to know what cap gains are on each
 PostTaxIV = np.array([50000., 50000., 50000., 50000., 50000., 50000., 50000., 50000.], dtype=float)
@@ -138,7 +153,7 @@ CashCushion = 0. #20000. #
 # Dividends
 # CurrentAnnualQualifiedDividends = 10000. # Scenario 1 & 2
 # CurrentAnnualNonQualifiedDividends = 100. # Scenario 1 & 2
-QualifiedDividendYield = 0. #0.016 # based on 5-year average dividend yield of VTSAX
+QualifiedDividendYield = 0.016 #0. # based on 5-year average dividend yield of VTSAX
 NonQualifiedDividendYield = 0.0 # assume negligible
 
 # Other income
@@ -225,7 +240,13 @@ IncDict = {'QualifiedDividendYield': QualifiedDividendYield,
            'SpecifiedIncome': SpecifiedIncome,
            'SpecifiedIncomeChange': SpecifiedIncomeChange,
            'AgeSpecifiedIncomeChangeWillStart': AgeSpecifiedIncomeChangeWillStart,
-           'TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag': TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag}
+           'TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag':
+               TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag,
+           'AdjustTaxBillIfIncomeForACAsubsidiesNotMet': AdjustTaxBillIfIncomeForACAsubsidiesNotMet,
+           'ExpectedIncomeForACAsubsidies': ExpectedIncomeForACAsubsidies,
+           'NumPeopleOnACA': NumPeopleOnACA,
+           'BenchmarkPrice': BenchmarkPrice,
+           'Residence': Residence}
 
 ExpDict = {'Exp': Exp,
            'ExpRate': ExpRate,

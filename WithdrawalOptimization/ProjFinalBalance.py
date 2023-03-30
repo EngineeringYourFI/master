@@ -18,6 +18,7 @@ from WithdrawFromPostTax import WithdrawFromPostTax
 from GetRemainingNeededCashNoTaxesOrPenalties import GetRemainingNeededCashNoTaxesOrPenalties
 from GetRemainingNeededCashWithTaxesAndOrPenalties import GetRemainingNeededCashWithTaxesAndOrPenalties
 from TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc import *
+from ComputeSubsidy import *
 
 # Expand width of output in console
 import pandas as pd
@@ -166,7 +167,8 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
         # same or more taxes as the previous year. If not, then need to estimate tax owed in the same year you make the
         # withdrawal, to avoid overpaying taxes too early most years (which may unfortunately require expensive
         # iteration).
-        EstimatedTaxesPaidThisYear[ct1] = TaxesGenPrevYear[ct1]
+        if TaxesGenPrevYear[ct1] >= 0.:
+            EstimatedTaxesPaidThisYear[ct1] = TaxesGenPrevYear[ct1]
         # Assuming that penalties do NOT work the same way as taxes: do not need to make estimated payments to the IRS
         # of penalties incurred from early retirement withdrawals. But if I ever find out otherwise, can easily switch
         # this back to using PenaltiesGenPrevYear[ct1].
@@ -278,6 +280,31 @@ def ProjFinalBalance(TaxRateInfo,IVdict,IncDict,ExpDict,CurrentAge,RMDstartAge,N
             PostTax['Bal'] = np.append(PostTax['Bal'],NewLot,1)
             # Also expand PostTax['CG'] array for new lot, with cap gain = 0 (since newly purchased)
             PostTax['CG'] = np.append(PostTax['CG'],np.zeros((np.shape(PostTax['CG'])[0],1)),1)
+
+        # Adjust tax bill for next year if total income not achieved, and have ACA health insurance (since subsidies
+        # will change) (which also means checking to see if either person still under 65, and thus not eligible for
+        # Medicare)
+        # if Income['Total'][ct1] != Income['MaxTotal'][ct1] and IncDict['AdjustTaxBillIfIncomeForACAsubsidiesNotMet'] \
+        #         and Age[ct1,-1] < 65.:
+        debug = 1
+        # if Income['Total'][ct1] != IncDict['ExpectedIncomeForACAsubsidies'] and \
+        #         IncDict['AdjustTaxBillIfIncomeForACAsubsidiesNotMet'] and Age[ct1,-1] < 65.:
+        if np.abs(Income['Total'][ct1] - IncDict['ExpectedIncomeForACAsubsidies']) > 0.009 and \
+                IncDict['AdjustTaxBillIfIncomeForACAsubsidiesNotMet'] and Age[ct1,-1] < 65.:
+
+            # Compute subsidy using expected income IncDict['ExpectedIncomeForACAsubsidies']
+            NominalSubsidy = ComputeSubsidy(IncDict['ExpectedIncomeForACAsubsidies'],IncDict['NumPeopleOnACA'],
+                                            IncDict['Residence'],IncDict['BenchmarkPrice'])
+            # Compute subsidy for actual total income
+            NewSubsidy = ComputeSubsidy(Income['Total'][ct1],IncDict['NumPeopleOnACA'],IncDict['Residence'],
+                                        IncDict['BenchmarkPrice'])
+            SubsidyDelta = np.round(NewSubsidy - NominalSubsidy,2)
+            # An increase in subsidy (SubsidyDelta increases) means a decrease in taxes owed the next year (or increases
+            # the refund), so subtract SubsidyDelta from Taxes[ct1] (taxes generated, which will be paid next year)
+            # And a decrease in subsidy produces a negative SubsidyDelta, so subtracting that negative number will
+            # increase Taxes[ct1]
+            Taxes[ct1] -= SubsidyDelta
+
 
         # Compute total PostTax
         PostTax['Total'][ct1] = np.sum(PostTax['Bal'][ct1,:])
