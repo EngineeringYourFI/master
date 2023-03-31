@@ -29,6 +29,6 @@ Please contact us if you have any issues running this code, via one of the follo
 
 ## License
 
-This project is licensed under the Creative Commons Attribution 4.0 International License. See the LICENSE.md file for more details.
+This project is licensed under the Creative Commons Attribution 4.0 International License. See the [LICENSE.md](https://github.com/EngineeringYourFI/master/blob/main/LICENSE.md) file for more details.
 
 Feel free to modify/add content as desired, and repost as desired, but please provide attribution to engineeringyourfi.com (in particular https://engineeringyourfi.com/fire-withdrawal-strategy-algorithms/).
