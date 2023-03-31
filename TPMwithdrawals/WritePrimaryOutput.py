@@ -65,6 +65,8 @@ def WritePrimaryOutput(OutputFile,OutputDict,FilingStatus,OutputToScreen):
 
     RMD = OutputDict['RMD']
 
+    SubsidyDelta = OutputDict['SubsidyDelta']
+
 
     # Saving the reference of the standard output
     original_stdout = sys.stdout
@@ -199,14 +201,15 @@ def WritePrimaryOutput(OutputFile,OutputDict,FilingStatus,OutputToScreen):
                ' following Jan')
     print('Note: any mandatory 20% withholding on 401(k)/403(b)/457(b) withdrawals counts towards estimated ' +
                'tax payment\n')
-    if TaxesStillOwed > 0.:
-        print('* Pay the IRS $'+'{:.2f}'.format(TaxesStillOwed)+' in owed taxes from last year when you file in ' +
-                   'the spring\n')
-    elif Refund > 0.:
-        print('You should get a $'+'{:.2f}'.format(Refund)+' refund from the IRS when you file in the spring\n')
-    else:
-        print('You should not get a refund or owe the IRS anything when you file in the spring\n')
 
+    if TaxesStillOwed > 0.:
+        print('* Pay the IRS $'+'{:.2f}'.format(TaxesStillOwed)+' in owed taxes from last year when you file in the ' +
+                   'spring this year\n')
+    elif Refund > 0.:
+        print('You should get a $'+'{:.2f}'.format(Refund)+' refund from the IRS when you file in the spring this '
+                                                           'year\n')
+    else:
+        print('You should not get a refund or owe the IRS anything when you file in the spring this year\n')
 
     print('')
     print('*** Withdrawal Info ***\n')
@@ -262,6 +265,15 @@ def WritePrimaryOutput(OutputFile,OutputDict,FilingStatus,OutputToScreen):
     print('')
     print('*** Taxes and Penalties ***\n')
     print('The above actions generate $'+'{:.2f}'.format(Taxes)+' in taxes and $'+'{:.2f}'.format(Penalties)+
-               ' in penalties.')
+               ' in penalties, which will be processed when filing your taxes next spring.\n')
+
+    if SubsidyDelta > 0.009:
+        print('Your total income was lower than the estimated income (MAGI) value you provided when signing up for ACA '
+              'health insurance (Obamacare), so you should get $'+'{:.2f}'.format(SubsidyDelta)+' more in subsidies for'
+              ' the year - which you will get from the IRS when filing your taxes next spring.\n')
+    if SubsidyDelta < -0.009:
+        print('Your total income was higher than the estimated income (MAGI) value you provided when signing up for ACA'
+              ' health insurance (Obamacare), so you should get $'+'{:.2f}'.format(-SubsidyDelta)+' less in subsidies '
+              'for the year. You will need to pay back the IRS this amount when filing your taxes next spring.\n')
 
     file.close()

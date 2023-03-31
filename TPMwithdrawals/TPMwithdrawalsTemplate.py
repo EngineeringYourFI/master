@@ -135,6 +135,15 @@ PenaltiesGenPrevYear = 0.
 TaxesPaidPrevYear = 0.
 PenaltiesPaidPrevYear = 0.
 
+# In case MaxTotalIncome (total income goal) is not achieved, or must be exceeded to achieve total cash needed, you
+# can provide values that will allow you to compute the change in ACA health insurance subsidies.
+ComputeAndReportACAsubsidyAdjustment = True
+ExpectedIncomeForACAsubsidies = 50000. # nominally the same as MaxTotalIncome
+NumPeopleOnACA = 4 # 1
+# Annual cost of benchmark plan (second-cheapest Silver level plan in your area and for your situation)
+BenchmarkPrice = 1458.76*12. #454.*12.
+Residence = 'Contiguous' #'Alaska' #'Hawaii' #
+
 # Flag dictating whether to run TryIncreasingPostTaxWithdrawalAndMaybeReducingStdInc method or not
 # This method has not yet produced better results for any scenario attempted - but it's available if desired
 # And it might produce better results when an ACA premiums/subsidies model is in place
@@ -289,7 +298,13 @@ IncDict = {'QualifiedDividendYield': QualifiedDividendYield,
            'SpecifiedIncome': SpecifiedIncome,
            'SpecifiedIncomeChange': SpecifiedIncomeChange,
            'AgeSpecifiedIncomeChangeWillStart': AgeSpecifiedIncomeChangeWillStart,
-           'TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag': TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag}
+           'TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag':
+               TryIncreasingPostTaxWithdrawalAndMaybeReducingStdIncFlag,
+           'ComputeAndReportACAsubsidyAdjustment': ComputeAndReportACAsubsidyAdjustment,
+           'ExpectedIncomeForACAsubsidies': ExpectedIncomeForACAsubsidies,
+           'NumPeopleOnACA': NumPeopleOnACA,
+           'BenchmarkPrice': BenchmarkPrice,
+           'Residence': Residence}
 
 ExpDict = {'Exp': Exp,
            'ExpRate': ExpRate,

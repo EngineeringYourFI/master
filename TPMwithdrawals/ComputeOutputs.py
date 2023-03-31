@@ -96,6 +96,8 @@ def ComputeOutputs(ProjArrays,IVdict,FilingStatus,IncDict):
         Refund = 0.
         TaxesStillOwed = TaxesGenPrevYear - TaxesPaidPrevYear
 
+    SubsidyDelta = ProjArrays['SubsidyDelta']
+
     TotalIV = np.sum(PreTaxIV) + np.sum(PreTax457bIV) + np.sum(RothIV) + np.sum(CashIV) + np.sum(PostTaxIV)
     TotalFinalBal = np.sum(PreTaxFinalBal) + np.sum(PreTax457bFinalBal) + np.sum(RothFinalBal) + \
                     np.sum(CashFinalBal) + np.sum(PostTaxFinalBal)
@@ -146,6 +148,7 @@ def ComputeOutputs(ProjArrays,IVdict,FilingStatus,IncDict):
                   'Refund': Refund,
                   'TaxesStillOwed': TaxesStillOwed,
                   'EstimatedTaxesToPayThisYear': EstimatedTaxesToPayThisYear,
-                  'RMD': RMD}
+                  'RMD': RMD,
+                  'SubsidyDelta': SubsidyDelta}
 
     return OutputDict
