@@ -1,10 +1,10 @@
-# Compute & Plot ACA Subsidies Tool
+# Income Variation ACA Subsidy Impact Tool
 
-This tool allows a user to compute and plot ACA subsidies.
+This tool allows a user to vary their total max income to determine the impact of ACA subsidy changes on final projection results.
 
 ## Getting Started
 
-Modify the inputs in the ACAsubsidiesTemplate.py file and run that file as the driver script.
+Modify the inputs in the IncomeVariationACAsubsidyImpactTemplate.py file and run that file as the driver script.
 
 If you'd like to preserve the original file values for later reference, you can copy the file and rename as desired. Then simply plug your values into the new file and run as the driver script.
 
@@ -12,8 +12,7 @@ If you'd like to preserve the original file values for later reference, you can 
 
 See the following pages for more information:
 
-* https://engineeringyourfi.com/how-to-compute-aca-obamacare-subsidies/#htoc-code
-* https://engineeringyourfi.com/a-hidden-income-tax/#htoc-code
+* https://engineeringyourfi.com/what-income-should-you-target-after-fire-with-obamacare/
 
 Note that within the embedded python interpreters on those pages (running this same tool), the main driver script is called main.py because that is mandated by Trinket. 
 
