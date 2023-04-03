@@ -1,11 +1,10 @@
 # Taxable Social Security Income Compute Tool
 
 This tool allows a user to evaluate methods to compute taxable social security income.
-provide values relevant to their retirement, and receive a list of instructions on how to execute the strategy for the year simulated.
 
 ## Getting Started
 
-Modify the inputs in the TPMwithdrawalsTemplate.py file and run that file as the driver script.
+Modify the inputs in the TaxableSocSecIncomeTemplate.py file and run that file as the driver script.
 
 If you'd like to preserve the original file values for later reference, you can copy the file and rename as desired. Then simply plug your values into the new file and run as the driver script.
 
@@ -13,8 +12,7 @@ If you'd like to preserve the original file values for later reference, you can 
 
 See the following pages for more information:
 
-* https://engineeringyourfi.com/optimal-fire-withdrawals-tool/
-* https://engineeringyourfi.com/tax-and-penalty-minimization-tpm-withdrawal-strategy/
+* https://engineeringyourfi.com/how-much-of-my-social-security-income-will-be-taxed/
 
 Note that within the embedded python interpreters on those pages (running this same tool), the main driver script is called main.py because that is mandated by Trinket. 
 
