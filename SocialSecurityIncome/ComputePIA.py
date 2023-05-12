@@ -9,11 +9,10 @@
 
 import numpy as np
 
-def ComputePIA(Income,Years):
+def ComputePIA(Income,BirthYear):
 
     # Unpack needed dicts
     AIME = Income['AIME']
-    BirthYear = Years['BirthYear']
 
     # PIA rates
     Rates = [0.9,0.32,0.15]

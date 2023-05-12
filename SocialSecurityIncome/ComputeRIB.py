@@ -5,7 +5,9 @@
 
 # ComputeRIB.py
 import sys
+import numpy as np
 
+from AugmentWithFutureEarnings import *
 from DetermineIfMinCreditsObtained import *
 from DetermineTaxableIncome import *
 from AdjustIncomeForInflation import *
@@ -17,11 +19,13 @@ from EarlyLateAdjust import *
 
 # Compute RIB (social security income, known officially as "Retirement Insurance Benefits")
 
-def ComputeRIB(Income,StartingAge,Years,Spouse):
+def ComputeRIB(Income,StartingAge,BirthDate,Spouse):
 
     # Unpack needed dicts
-    BirthYear = Years['BirthYear']
-    # CurrentYear = Years['CurrentYear']
+    BirthYear = BirthDate['Year']
+
+    # Augment Income array if future earnings expected
+    AugmentWithFutureEarnings(Income,BirthDate,StartingAge) #Income =
 
     # Determine if the minimum 40 credits have been achieved, and thus eligible for SocSec
     MinCreditsObtained, TotalCredits = DetermineIfMinCreditsObtained(Income)
@@ -35,16 +39,16 @@ def ComputeRIB(Income,StartingAge,Years,Spouse):
     Income['TaxableIncome'] = DetermineTaxableIncome(Income)
 
     # Adjust this taxable income for inflation
-    Income['AdjustedTaxableIncome'] = AdjustIncomeForInflation(Income,Years)
+    Income['AdjustedTaxableIncome'] = AdjustIncomeForInflation(Income,BirthYear)
 
     # Compute Average Indexed Monthly Earnings (AIME) - using highest 35 years of indexed (inflation-adjusted) earnings
     Income['AIME'] = ComputeAIME(Income)
 
     # Compute Primary Insurance Amount (PIA)
-    PIA = ComputePIA(Income,Years)
+    PIA = ComputePIA(Income,BirthYear)
 
     # Adjust PIA with any relevant Cost of Living Adjustments (COLA)
-    PIA = AdjustPIAbyCOLA(PIA,Years)
+    PIA = AdjustPIAbyCOLA(PIA,BirthYear)
 
     # Compute Full retirement age (FRA)
     FRA = ComputeFRA(BirthYear)

@@ -42,8 +42,14 @@ def DetermineTaxableIncome(Income):
 
     # Loop over income years, compute taxable income for each
     for ct in range(len(IncomeArray)):
+
+        # Determine Contribution and Benefit Base (CBB) for this year
         Year = IncomeYears[ct]
-        ind = YearsArray.index(Year)
+        # If year is within YearsArray, grab corresponding index:
+        if Year <= YearsArray[-1]:
+            ind = YearsArray.index(Year)
+        else: # use the credit cost for the final year listed
+            ind = len(YearsArray) - 1
         CBBthisYear = CBB[ind]
 
         if IncomeArray[ct] > CBBthisYear:

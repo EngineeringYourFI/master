@@ -22,14 +22,13 @@
 
 import numpy as np
 
-def AdjustIncomeForInflation(Income,Years):
+def AdjustIncomeForInflation(Income,BirthYear):
 
     # Unpack needed dicts
-    BirthYear = Years['BirthYear']
     IncomeYears = Income['IncomeYears']
     TaxableIncome = Income['TaxableIncome']
 
-    # Determine year you turned 60
+    # Determine year you turn 60
     YearYouTurn60 = BirthYear + 60
 
     # National average wage indexing series, 1951-2021

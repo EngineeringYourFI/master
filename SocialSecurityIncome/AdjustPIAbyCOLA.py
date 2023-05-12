@@ -23,11 +23,9 @@
 
 import numpy as np
 
-def AdjustPIAbyCOLA(PIA,Years):
+def AdjustPIAbyCOLA(PIA,BirthYear):
 
     # Unpack needed dicts
-    BirthYear = Years['BirthYear']
-    CurrentYear = Years['CurrentYear']
 
     # Determine year you turn 62
     YearYouTurn62 = BirthYear + 62
@@ -46,23 +44,16 @@ def AdjustPIAbyCOLA(PIA,Years):
         # Then the year you turned 62 is in the published COLA table, so use that
         YearYouTurn62ind = COLAyears.index(YearYouTurn62)
         ApplyCOLA = True
-        # If user specified current year BEFORE actual current year (one beyond the published COLA table final year),
-        # then determine current year index
-        if CurrentYear <= COLAyears[-1]:
-            CurrentYearInd = COLAyears.index(CurrentYear)
-        else:
-            CurrentYearInd = len(COLAyears)
     else:
         # Then you turned 62 after the end of the published COLA table (which includes values through the actual
         # previous year) - so don't do any COLA
         ApplyCOLA = False
 
-    # If you turned 62 before the current year, loop from the year you turn 62 to the current year, applying COLA for
-    # each year
-    # Note: CurrentYear could be set by the user to be before the actual current year, for computing what the RIB was in
-    # a previous year
+    # If you turned 62 before the current year, loop from the year you turn 62 to the current year (assumed the year
+    # after the final year listed in COLAyears), applying COLA for each year
+
     if ApplyCOLA:
-        for ct in range(YearYouTurn62ind,CurrentYearInd):
+        for ct in range(YearYouTurn62ind,len(COLAyears)):
             PIA = PIA * (1.+COLAarray[ct])
             # truncate down to the next lower dime
             PIA = np.floor(PIA*10.)/10.

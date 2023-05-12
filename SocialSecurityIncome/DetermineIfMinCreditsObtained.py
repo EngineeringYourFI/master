@@ -44,8 +44,14 @@ def DetermineIfMinCreditsObtained(Income):
 
     # Loop over income years
     for ct in range(len(IncomeYears)):
+
+        # Determine credit cost for this year
         Year = IncomeYears[ct]
-        ind = YearsArray.index(Year)
+        # If year is within YearsArray, grab corresponding index:
+        if Year <= YearsArray[-1]:
+            ind = YearsArray.index(Year)
+        else: # use the credit cost for the final year listed
+            ind = len(YearsArray) - 1
         CreditCostThisYear = CreditCost[ind]
 
         NumCreditsThisYear = int(IncomeArray[ct] / CreditCostThisYear)
