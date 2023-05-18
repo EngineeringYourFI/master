@@ -25,8 +25,6 @@ import numpy as np
 
 def AdjustPIAbyCOLA(PIA,BirthYear):
 
-    # Unpack needed dicts
-
     # Determine year you turn 62
     YearYouTurn62 = BirthYear + 62
 
@@ -51,7 +49,6 @@ def AdjustPIAbyCOLA(PIA,BirthYear):
 
     # If you turned 62 before the current year, loop from the year you turn 62 to the current year (assumed the year
     # after the final year listed in COLAyears), applying COLA for each year
-
     if ApplyCOLA:
         for ct in range(YearYouTurn62ind,len(COLAyears)):
             PIA = PIA * (1.+COLAarray[ct])

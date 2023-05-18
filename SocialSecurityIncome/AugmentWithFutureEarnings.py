@@ -12,8 +12,6 @@ import numpy as np
 def AugmentWithFutureEarnings(Income,BirthDate,StartingAge):
 
     # Unpack needed dicts
-    # IncomeYears = Income['IncomeYears']
-    # IncomeArray = Income['IncomeArray']
     ExpectedFutureIncome = Income['ExpectedFutureIncome']
     ExpectedFutureIncomeNumYears = Income['ExpectedFutureIncomeNumYears']
     BirthYear = BirthDate['Year']
@@ -29,11 +27,4 @@ def AugmentWithFutureEarnings(Income,BirthDate,StartingAge):
                 Income['IncomeYears'] = np.append(Income['IncomeYears'],AddedYear)
                 Income['IncomeArray'] = np.append(Income['IncomeArray'],ExpectedFutureIncome)
             else:
-                # debug = 1
                 break
-
-    # debug = 2
-
-    # debug = 1
-    # no need to return anything, the Income dictionary is mutable
-    # return Income
