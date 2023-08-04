@@ -12,7 +12,7 @@ If you'd like to preserve the original file values for later reference, you can 
 
 See the following pages for more information:
 
-* **TBD**
+* https://engineeringyourfi.com/is-it-worth-letting-your-warehouse-club-membership-expire/
 
 Note that within the embedded python interpreters (TBD) on those pages (running this same tool), the main driver script is called main.py because that is mandated by Trinket. 
 
