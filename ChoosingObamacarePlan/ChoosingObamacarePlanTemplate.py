@@ -205,7 +205,7 @@ if TotalCostWithIndividualExpenses:
          'ymin': 0., 'ymax': np.nanmax(TotalCost/1000.)+1.5,
          'xmin': Expense[0]/1000., 'xmax': Expense[-1]/1000.,
          'ylabel': 'Total Out of Pocket Cost [$K]',
-         'xlabel': 'Medical Expenses Beyond Set Fee Services \n(E.g. Copays, Rx, Imaging, Labs) [$K]',
+         'xlabel': 'Medical Expenses (E.g., Hospital Stays) \nBeyond Set Fee Services (E.g., Copays) [$K]',
          'TitleText': 'Total Out of Pocket Cost vs \nMedical Expenses for Individual',
          'LegendLoc': 'center right', #'upper right', #'center left', #'upper center', #
          'AddTextBox': False,
@@ -281,7 +281,7 @@ if TotalCostWithFamilyExpenses:
          'ymin': 0., 'ymax': np.nanmax(TotalCost/1000.)+1.5,
          'xmin': Expense[0]/1000., 'xmax': Expense[-1]/1000.,
          'ylabel': 'Total Out of Pocket Cost [$K]',
-         'xlabel': 'Medical Expenses Beyond Set Fee Services \n(E.g. Copays, Rx, Imaging, Labs) [$K]',
+         'xlabel': 'Medical Expenses (E.g., Hospital Stays) \nBeyond Set Fee Services (E.g., Copays) [$K]',
          'TitleText': 'Total Out of Pocket Cost vs \nMedical Expenses for Family',
          'LegendLoc': 'center right', #'upper right', #'center left', #'upper center', #
          'AddTextBox': False,
