@@ -23,7 +23,7 @@ def DetermineTaxableIncome(Income):
 
     # Contribution and benefit bases, 1937-2023
     # Table provided at https://www.ssa.gov/oact/cola/cbb.html
-    YearsArray = list(range(1937, 2024))
+    YearsArray = list(range(1937, 2026))
     CBB = np.zeros(len(YearsArray))
     CBB[0:14] = 3000.
     CBB[14:18] = 3600.
@@ -35,7 +35,7 @@ def DetermineTaxableIncome(Income):
                   39600., 42000., 43800., 45000., 48000., 51300., 53400., 55500., 57600., 60600., 61200., 62700.,
                   65400., 68400., 72600., 76200., 80400., 84900., 87000., 87900., 90000., 94200., 97500., 102000.,
                   106800., 106800., 106800., 110100., 113700., 117000., 118500., 118500., 127200., 128400., 132900.,
-                  137700., 142800., 147000., 160200.]
+                  137700., 142800., 147000., 160200., 168600., 176100.]
 
     # Initialize
     TaxableIncome = np.zeros(len(IncomeArray))
