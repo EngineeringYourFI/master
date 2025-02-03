@@ -43,6 +43,7 @@ def ComputeRIB(Income,StartingAge,BirthDate,Spouse):
 
     # Compute Average Indexed Monthly Earnings (AIME) - using highest 35 years of indexed (inflation-adjusted) earnings
     Income['AIME'] = ComputeAIME(Income)
+    print('Average Indexed Monthly Earnings (AIME): $'+'{:.2f}'.format(np.round(Income['AIME'],2)))
 
     # Compute Primary Insurance Amount (PIA)
     PIA = ComputePIA(Income,BirthYear)

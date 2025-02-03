@@ -26,13 +26,13 @@ def ComputePIA(Income,BirthYear):
     # These bend points are determined using Bend Points for 1979 (180 and 1085), mapped forward in time using AWI:
     # https://www.ssa.gov/oact/COLA/piaformula.html
 
-    BendPointYears = list(range(1979, 2024))
+    BendPointYears = list(range(1979, 2026))
     BendPoint1array = [180, 194, 211, 230, 254, 267, 280, 297, 310, 319, 339, 356, 370, 387, 401, 422, 426, 437, 455,
                        477, 505, 531, 561, 592, 606, 612, 627, 656, 680, 711, 744, 761, 749, 767, 791, 816, 826, 856,
-                       885, 895, 926, 960, 996, 1024, 1115]
+                       885, 895, 926, 960, 996, 1024, 1115, 1174, 1226]
     BendPoint2array = [1085, 1171, 1274, 1388, 1528, 1612, 1691, 1790, 1866, 1922, 2044, 2145, 2230, 2333, 2420, 2545,
                        2567, 2635, 2741, 2875, 3043, 3202, 3381, 3567, 3653, 3689, 3779, 3955, 4100, 4288, 4483, 4586,
-                       4517, 4624, 4768, 4917, 4980, 5157, 5336, 5397, 5583, 5785, 6002, 6172, 6721]
+                       4517, 4624, 4768, 4917, 4980, 5157, 5336, 5397, 5583, 5785, 6002, 6172, 6721, 7078, 7391]
 
     # Determine appropriate bend points: values for the year you turn 62
     # (or latest bend points if turning 62 after final value in BendPointYears array, assuming all future estimates in
